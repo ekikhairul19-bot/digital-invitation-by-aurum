@@ -3,9 +3,9 @@
  * KONFIGURASI KONEKSI BACKEND GOOGLE APPS SCRIPT (WAJIB DIISI 1x)
  * ============================================================================
  * Tempelkan URL Web App (/exec) dari Google Apps Script Anda di bawah ini.
- * Contoh: 'https://script.google.com/macros/s/AKfycbx.../exec'
+ * Contoh: 'https://script.google.com/macros/s/AKfycbywQhOPxw9XJwimK3OPOO12o9_uVhcg2NC2VLP9gw4Mp5CpueMx4a5jM3Xk3Dc78uA/exec'
  */
-var GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbywQhOPxw9XJwimK3OPOO12o9_uVhcg2NC2VLP9gw4Mp5CpueMx4a5jM3Xk3Dc78uA/exec';
+var GAS_WEB_APP_URL = 'PASTE_URL_WEB_APP_EXEC_ANDA_DI_SINI';
 
 /**
  * ============================================================================
@@ -147,13 +147,13 @@ var scannerScanInterval = null;
 var scannerOffscreenCanvas = null;
 
 // Elemen DOM Utama
-var coverOverlay = document.getElementById('coverOverlay');
-var weddingAudio = document.getElementById('weddingAudio');
-var floatingPlayer = document.getElementById('floatingPlayer');
-var vinylDisc = document.getElementById('vinylDisc');
-var audioStatusText = document.getElementById('audioStatusText');
-var btnOpen = document.getElementById('btnOpenInvitation');
-var btnWaxSeal = document.getElementById('btnWaxSeal');
+var coverOverlay = null;
+var weddingAudio = null;
+var floatingPlayer = null;
+var vinylDisc = null;
+var audioStatusText = null;
+var btnOpen = null;
+var btnWaxSeal = null;
 
 // ==========================================================================
 // 0. JEMBATAN KOMUNIKASI JSON API (GITHUB PAGES <-> GOOGLE APPS SCRIPT)
@@ -4230,21 +4230,25 @@ document.addEventListener('DOMContentLoaded', function() {
       }, 400);
     }
   } catch (e) {}
+
+  // Inisialisasi elemen DOM setelah halaman ter-load sepenuhnya
+  coverOverlay = document.getElementById('coverOverlay');
+  weddingAudio = document.getElementById('weddingAudio');
+  floatingPlayer = document.getElementById('floatingPlayer');
+  vinylDisc = document.getElementById('vinylDisc');
+  audioStatusText = document.getElementById('audioStatusText');
+  btnOpen = document.getElementById('btnOpenInvitation');
+  btnWaxSeal = document.getElementById('btnWaxSeal');
+
+  if (btnOpen) {
+    btnOpen.addEventListener('click', openEnvelope);
+  }
+  if (btnWaxSeal) {
+    btnWaxSeal.addEventListener('click', openEnvelope);
+  }
+  if (floatingPlayer) {
+    floatingPlayer.addEventListener('click', function() {
+      toggleAudio();
+    });
+  }
 });
-```
-
----
-
-### Panduan Singkat Menghubungkan Google Apps Script ke GitHub Pages:
-
-1. **Perbarui Backend di Google Apps Script:**
-   * Buka Google Sheets Anda $\rightarrow$ **Ekstensi > Apps Script**.
-   * Salin kode baru **`code.gs`** (dari Tahap 1) ke file `code.gs`, lalu simpan (`Ctrl + S`).
-   * Klik **Terapkan (*Deploy*) > Kelola deployment > ikon Pensil (Edit) > Versi: Versi baru > Terapkan**.
-   * Salin **URL Web App** yang berakhiran `/exec`.
-2. **Tempelkan URL ke `app.js`:**
-   * Pada baris ke-7 file **`app.js`** di atas, ganti `'PASTE_URL_WEB_APP_EXEC_ANDA_DI_SINI'` dengan URL `/exec` Anda.
-3. **Upload 3 File ke GitHub:**
-   * Buat repositori publik baru di GitHub (misal: `cahyo-hani`), lalu unggah 3 file dari editor ini: **`index.html`**, **`style.css`**, dan **`app.js`**.
-   * Masuk ke menu **Settings > Pages** di repositori GitHub Anda $\rightarrow$ pilih **Branch: `main`** $\rightarrow$ klik **Save**.
-   * Dalam 1–2 menit, tautan undangan HTTPS GitHub Pages Anda langsung aktif dan kamera QR scanner maupun kamera selfie Twibbon berjalan lancar 100%!
