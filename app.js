@@ -5,7 +5,7 @@
  * Tempelkan URL Web App (/exec) dari Google Apps Script Anda di bawah ini.
  * Contoh: 'https://script.google.com/macros/s/AKfycbywQhOPxw9XJwimK3OPOO12o9_uVhcg2NC2VLP9gw4Mp5CpueMx4a5jM3Xk3Dc78uA/exec'
  */
-var GAS_WEB_APP_URL = 'PASTE_URL_WEB_APP_EXEC_ANDA_DI_SINI';
+var GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbywQhOPxw9XJwimK3OPOO12o9_uVhcg2NC2VLP9gw4Mp5CpueMx4a5jM3Xk3Dc78uA/exec';
 
 /**
  * ============================================================================
