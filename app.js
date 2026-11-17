@@ -3,7 +3,7 @@
  * KONFIGURASI KONEKSI BACKEND GOOGLE APPS SCRIPT (WAJIB DIISI 1x)
  * ============================================================================
  * Tempelkan URL Web App (/exec) dari Google Apps Script Anda di bawah ini.
- * Contoh: 'https://script.google.com/macros/s/AKfycbywQhOPxw9XJwimK3OPOO12o9_uVhcg2NC2VLP9gw4Mp5CpueMx4a5jM3Xk3Dc78uA/exec'
+ * Contoh: 'https://script.google.com/macros/s/AKfycbx.../exec'
  */
 var GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbywQhOPxw9XJwimK3OPOO12o9_uVhcg2NC2VLP9gw4Mp5CpueMx4a5jM3Xk3Dc78uA/exec';
 
@@ -120,7 +120,7 @@ var isDraggingCanvasPhoto = false;
 var canvasDragStartX = 0;
 var canvasDragStartY = 0;
 
-// Variabel Fitur: Kalender, Twibbon 9:16 Multi-Template & Kamera Scanner
+// Variabel Fitur: Kalender, Twibbon 9:16 (100% Dinamis Tanpa Desain Tertanam) & Kamera Depan/Belakang
 var currentCalendarEvent = null;
 var twibbonUserImg = null;
 var twibbonRotation = 0;
@@ -131,14 +131,10 @@ var isDraggingTwibbon = false;
 var twibbonDragStartX = 0;
 var twibbonDragStartY = 0;
 var twibbonLiveStream = null;
+var twibbonCameraFacing = 'user';
 
-// Semua template Twibbon bersifat dinamis & dapat dihapus oleh Admin
-var customTwibbonTemplates = [
-  { id: 'tpl-royal', name: 'Royal Arch', style: 'royal-arch', url: '', builtIn: false },
-  { id: 'tpl-floral', name: 'Floral Gold', style: 'floral-gold', url: '', builtIn: false },
-  { id: 'tpl-ivory', name: 'Luxury Ivory', style: 'ivory-classic', url: '', builtIn: false }
-];
-var selectedTwibbonId = 'tpl-royal';
+var customTwibbonTemplates = [];
+var selectedTwibbonId = '';
 var twibbonCustomOverlayCache = {};
 
 var scannerStream = null;
@@ -877,7 +873,7 @@ function confirmAppleCalendar() {
 }
 
 // ==========================================================================
-// 9. STUDIO TWIBBON 9:16 MULTI-TEMPLATE & KAMERA SELFIE LANGSUNG (NATIVE HTTPS)
+// 9. STUDIO TWIBBON 9:16 (100% DESAIN ADMIN + KAMERA DEPAN & BELAKANG)
 // ==========================================================================
 function renderAdminTwibbonList() {
   var listEl = document.getElementById('adminTwibbonList');
@@ -885,7 +881,7 @@ function renderAdminTwibbonList() {
   listEl.innerHTML = '';
 
   if (!customTwibbonTemplates || customTwibbonTemplates.length === 0) {
-    listEl.innerHTML = '<div style="font-size:11px; color:#8C787A; padding:8px; text-align:center;">Belum ada template Twibbon aktif.</div>';
+    listEl.innerHTML = '<div style="font-size:11px; color:#8C787A; padding:8px; text-align:center;">Belum ada desain Twibbon. Tambahkan desain PNG 9:16 di atas.</div>';
     return;
   }
 
@@ -893,7 +889,10 @@ function renderAdminTwibbonList() {
     var item = document.createElement('div');
     item.className = 'admin-twibbon-item';
     item.innerHTML =
-      '<div><strong>' + escapeHtml(tpl.name) + '</strong> <span style="color:#6B5558;">(' + escapeHtml(tpl.style) + ')</span></div>' +
+      '<div style="min-width:0; flex:1; padding-right:8px;">' +
+        '<strong>' + escapeHtml(tpl.name) + '</strong>' +
+        '<div style="font-size:9.5px; color:#6B5558; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + escapeHtml(tpl.url || '') + '</div>' +
+      '</div>' +
       '<button type="button" class="btn-del-twibbon" onclick="deleteCustomTwibbonTemplate(\'' + escapeJsAttr(tpl.id) + '\')">Hapus</button>';
     listEl.appendChild(item);
   });
@@ -901,11 +900,9 @@ function renderAdminTwibbonList() {
 
 function addCustomTwibbonTemplate() {
   var nameInp = document.getElementById('newTwibbonName');
-  var styleSel = document.getElementById('newTwibbonStyle');
   var urlInp = document.getElementById('newTwibbonUrl');
 
   var name = nameInp ? nameInp.value.trim() : '';
-  var style = styleSel ? styleSel.value : 'royal-arch';
   var url = urlInp ? urlInp.value.trim() : '';
 
   if (!name) {
@@ -913,12 +910,15 @@ function addCustomTwibbonTemplate() {
     return;
   }
 
+  if (!url) {
+    showToast('Masukkan tautan URL gambar PNG bingkai Twibbon 9:16.');
+    return;
+  }
+
   var newTpl = {
     id: 'tpl-' + new Date().getTime(),
     name: name,
-    style: style,
-    url: url,
-    builtIn: false
+    url: url
   };
 
   customTwibbonTemplates.push(newTpl);
@@ -943,7 +943,7 @@ function deleteCustomTwibbonTemplate(tplId) {
   }
   renderAdminTwibbonList();
   renderGuestTwibbonSelector();
-  showToast('Template Twibbon dihapus.');
+  showToast('Desain Twibbon dihapus. Jangan lupa klik Simpan.');
 }
 
 function renderGuestTwibbonSelector() {
@@ -963,18 +963,15 @@ function renderGuestTwibbonSelector() {
     selectedTwibbonId = customTwibbonTemplates[0].id;
   }
 
-  var initials = currentClientConfig.inisial_mempelai || 'C&H';
-
   customTwibbonTemplates.forEach(function(tpl) {
-    var bgStyle = 'background:#4A0E17; color:#E5C378;';
-    if (tpl.style === 'floral-gold') bgStyle = 'background:#7A1A27; color:#FFF;';
-    else if (tpl.style === 'ivory-classic') bgStyle = 'background:#FAF5ED; color:#4A0E17;';
-
+    var cleanThumbUrl = convertDriveUrl(tpl.url || '');
     var card = document.createElement('div');
     card.className = 'twibbon-tpl-card' + (tpl.id === selectedTwibbonId ? ' active' : '');
     card.onclick = function() { selectTwibbonTemplate(tpl.id); };
     card.innerHTML =
-      '<div class="twibbon-tpl-swatch" style="' + bgStyle + '">' + escapeHtml(initials) + '</div>' +
+      '<div class="twibbon-tpl-swatch" style="background:#2A060B; overflow:hidden; padding:0;">' +
+        '<img src="' + escapeHtml(cleanThumbUrl) + '" alt="' + escapeHtml(tpl.name) + '" style="width:100%; height:100%; object-fit:cover;">' +
+      '</div>' +
       '<span class="twibbon-tpl-label">' + escapeHtml(tpl.name) + '</span>';
     strip.appendChild(card);
   });
@@ -988,6 +985,10 @@ function selectTwibbonTemplate(tplId) {
 
 function openTwibbonModal() {
   renderGuestTwibbonSelector();
+  if (!customTwibbonTemplates || customTwibbonTemplates.length === 0) {
+    showToast('Belum ada desain bingkai Twibbon yang diatur oleh Admin.');
+    return;
+  }
   var modal = document.getElementById('twibbonModal');
   if (modal) modal.classList.add('show');
   initTwibbonDragEvents();
@@ -1006,31 +1007,64 @@ function stopTwibbonCamera() {
     twibbonLiveStream = null;
   }
   var video = document.getElementById('twibbonLiveVideo');
-  var btnSnap = document.getElementById('btnTwibbonSnap');
-  if (video) video.style.display = 'none';
-  if (btnSnap) btnSnap.style.display = 'none';
+  var camControls = document.getElementById('twibbonLiveCamControls');
+  if (video) {
+    video.srcObject = null;
+    video.style.display = 'none';
+  }
+  if (camControls) {
+    camControls.style.display = 'none';
+  }
 }
 
-function openTwibbonCamera() {
+function openTwibbonCamera(facingOverride) {
+  if (facingOverride) {
+    twibbonCameraFacing = facingOverride;
+  }
   var video = document.getElementById('twibbonLiveVideo');
-  var btnSnap = document.getElementById('btnTwibbonSnap');
+  var camControls = document.getElementById('twibbonLiveCamControls');
+  var switchBtn = document.getElementById('btnTwibbonSwitchCam');
 
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && video) {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+    if (twibbonLiveStream) {
+      twibbonLiveStream.getTracks().forEach(function(track) { track.stop(); });
+      twibbonLiveStream = null;
+    }
+
+    var isFront = (twibbonCameraFacing === 'user');
+    video.style.transform = isFront ? 'scaleX(-1)' : 'none';
+    if (switchBtn) {
+      switchBtn.textContent = isFront ? '🔄 Kamera Belakang' : '🔄 Kamera Depan';
+    }
+
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: twibbonCameraFacing },
+      audio: false
+    })
       .then(function(stream) {
         twibbonLiveStream = stream;
         video.srcObject = stream;
+        video.play();
         video.style.display = 'block';
-        if (btnSnap) btnSnap.style.display = 'inline-block';
+        if (camControls) camControls.style.display = 'flex';
       })
       .catch(function() {
         var camInp = document.getElementById('twibbonCameraInput');
-        if (camInp) camInp.click();
+        if (camInp) {
+          camInp.setAttribute('capture', twibbonCameraFacing === 'environment' ? 'environment' : 'user');
+          camInp.click();
+        }
       });
   } else {
     var camInp = document.getElementById('twibbonCameraInput');
     if (camInp) camInp.click();
   }
+}
+
+function switchTwibbonCamera() {
+  var nextFacing = (twibbonCameraFacing === 'user') ? 'environment' : 'user';
+  openTwibbonCamera(nextFacing);
+  showToast(nextFacing === 'environment' ? 'Beralih ke Kamera Belakang' : 'Beralih ke Kamera Depan');
 }
 
 function captureTwibbonLiveFrame() {
@@ -1041,8 +1075,12 @@ function captureTwibbonLiveFrame() {
   tempCanvas.width = video.videoWidth;
   tempCanvas.height = video.videoHeight;
   var tCtx = tempCanvas.getContext('2d');
-  tCtx.translate(tempCanvas.width, 0);
-  tCtx.scale(-1, 1);
+
+  // Hanya balik horizontal (mirror) jika memakai kamera depan ('user')
+  if (twibbonCameraFacing === 'user') {
+    tCtx.translate(tempCanvas.width, 0);
+    tCtx.scale(-1, 1);
+  }
   tCtx.drawImage(video, 0, 0);
 
   var img = new Image();
@@ -1158,14 +1196,14 @@ function drawTwibbonCanvas() {
 
   ctx.clearRect(0, 0, W, H);
 
-  var activeTpl = (customTwibbonTemplates || []).find(function(t) { return t.id === selectedTwibbonId; }) || {
-    style: 'royal-arch',
-    url: ''
-  };
+  var activeTpl = (customTwibbonTemplates || []).find(function(t) { return t.id === selectedTwibbonId; }) ||
+    ((customTwibbonTemplates && customTwibbonTemplates.length > 0) ? customTwibbonTemplates[0] : null);
 
-  ctx.fillStyle = activeTpl.style === 'ivory-classic' ? '#FAF5ED' : '#2A060B';
+  // Latar belakang dasar netral gelap (tanpa bingkai bawaan sistem)
+  ctx.fillStyle = '#1A0307';
   ctx.fillRect(0, 0, W, H);
 
+  // Gambar foto pengguna jika sudah dijepret / dipilih dari galeri
   if (twibbonUserImg) {
     ctx.save();
     ctx.translate(W / 2 + twibbonOffsetX, H / 2 + twibbonOffsetY);
@@ -1177,67 +1215,39 @@ function drawTwibbonCanvas() {
     ctx.drawImage(twibbonUserImg, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
   } else {
-    ctx.fillStyle = activeTpl.style === 'ivory-classic' ? '#6B5558' : '#E5C378';
+    ctx.fillStyle = '#E5C378';
     ctx.font = 'bold 34px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Ketuk Kamera Selfie atau Galeri', W / 2, H / 2 - 20);
+    ctx.fillText('Ketuk Kamera atau Galeri', W / 2, H / 2 - 20);
     ctx.font = '26px sans-serif';
     ctx.fillText('untuk memasang foto Anda di bingkai ini', W / 2, H / 2 + 30);
   }
 
-  if (activeTpl.url && activeTpl.url.trim()) {
+  // Gambar bingkai PNG kustom yang diinput di Admin Studio (100% murni tanpa desain lain)
+  if (activeTpl && activeTpl.url && activeTpl.url.trim()) {
     var cleanOverlayUrl = convertDriveUrl(activeTpl.url.trim());
     if (twibbonCustomOverlayCache[cleanOverlayUrl]) {
       ctx.drawImage(twibbonCustomOverlayCache[cleanOverlayUrl], 0, 0, W, H);
-      return;
     } else {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fillRect(0, H - 110, W, 110);
+      ctx.fillStyle = '#E5C378';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Memuat bingkai Twibbon...', W / 2, H - 45);
+
       var ovImg = new Image();
       ovImg.crossOrigin = 'anonymous';
       ovImg.onload = function() {
         twibbonCustomOverlayCache[cleanOverlayUrl] = ovImg;
         drawTwibbonCanvas();
       };
+      ovImg.onerror = function() {
+        showToast('Gambar bingkai Twibbon gagal dimuat. Pastikan akses link Google Drive publik.');
+      };
       ovImg.src = cleanOverlayUrl;
     }
   }
-
-  var isIvory = (activeTpl.style === 'ivory-classic');
-  var borderGold = isIvory ? '#9A7730' : '#E5C378';
-  var bandBg = isIvory ? 'rgba(250, 245, 237, 0.92)' : 'rgba(42, 6, 11, 0.88)';
-  var textPrimary = isIvory ? '#4A0E17' : '#FFFFFF';
-  var textAccent = isIvory ? '#9A7730' : '#E5C378';
-
-  ctx.strokeStyle = borderGold;
-  ctx.lineWidth = 14;
-  ctx.strokeRect(36, 36, W - 72, H - 72);
-
-  ctx.lineWidth = 4;
-  ctx.strokeRect(58, 58, W - 116, H - 116);
-
-  ctx.fillStyle = bandBg;
-  ctx.fillRect(58, 58, W - 116, 175);
-  ctx.fillStyle = textAccent;
-  ctx.font = 'bold 28px serif';
-  ctx.textAlign = 'center';
-  ctx.fillText((currentClientConfig.cover_eyebrow || "WALIMATUL 'URSY").toUpperCase(), W / 2, 130);
-  ctx.fillStyle = textPrimary;
-  ctx.font = 'italic bold 56px serif';
-  ctx.fillText(currentClientConfig.panggilan_title || 'Mempelai', W / 2, 198);
-
-  ctx.fillStyle = bandBg;
-  ctx.fillRect(58, H - 255, W - 116, 197);
-  ctx.fillStyle = textAccent;
-  ctx.font = 'bold 30px serif';
-  ctx.fillText(currentClientConfig.inisial_mempelai || 'C&H', W / 2, H - 190);
-  ctx.fillStyle = textPrimary;
-  ctx.font = '24px sans-serif';
-  var subText = (document.getElementById('cfgTwibbonSubtext') && document.getElementById('cfgTwibbonSubtext').value.trim())
-    ? document.getElementById('cfgTwibbonSubtext').value.trim()
-    : (currentClientConfig.twibbon_subtext || '');
-  ctx.fillText(subText, W / 2, H - 135);
-  ctx.fillStyle = textAccent;
-  ctx.font = 'italic 22px serif';
-  ctx.fillText('Turut Berbahagia & Mengucapkan Selamat', W / 2, H - 88);
 }
 
 function downloadTwibbonResult() {
@@ -2284,8 +2294,11 @@ function openLightbox(el) {
   var modal = document.getElementById('lightboxModal');
   var lightboxImg = document.getElementById('lightboxImg');
   if (img && modal && lightboxImg) {
+    lightboxImg.style.transform = 'none';
+    lightboxImg.style.objectPosition = 'center center';
     lightboxImg.src = img.src;
     modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
   }
 }
 
@@ -2423,17 +2436,21 @@ function populateConfigForms(cfg) {
     elPubUrl.value = cfg.public_web_app_url || window.location.href.split('?')[0].split('#')[0];
   }
 
-  if (cfg.twibbon_templates_json !== undefined && cfg.twibbon_templates_json !== '') {
-    try {
-      var parsedTpls = JSON.parse(cfg.twibbon_templates_json);
-      if (Array.isArray(parsedTpls)) {
-        customTwibbonTemplates = parsedTpls.map(function(t) {
-          t.builtIn = false;
-          return t;
-        });
+  // Muat hanya desain Twibbon kustom yang memiliki URL gambar valid (tanpa tema tertanam)
+  if (cfg.twibbon_templates_json !== undefined) {
+    if (cfg.twibbon_templates_json === '' || cfg.twibbon_templates_json === '[]') {
+      customTwibbonTemplates = [];
+    } else {
+      try {
+        var parsedTpls = JSON.parse(cfg.twibbon_templates_json);
+        if (Array.isArray(parsedTpls)) {
+          customTwibbonTemplates = parsedTpls.filter(function(t) {
+            return t && t.url && String(t.url).trim() !== '';
+          });
+        }
+      } catch (e) {
+        console.warn('Gagal parsing twibbon_templates_json:', e);
       }
-    } catch (e) {
-      console.warn('Gagal parsing twibbon_templates_json:', e);
     }
   }
   renderAdminTwibbonList();
@@ -3050,6 +3067,7 @@ function filterRSVPTable() {
 function closeLightbox() {
   var modal = document.getElementById('lightboxModal');
   if (modal) modal.classList.remove('show');
+  document.body.style.overflow = '';
 }
 
 function toggleQRISModal(show) {
@@ -3151,10 +3169,35 @@ function saveAllLiveEdits() {
 // ==========================================================================
 // 15. STUDIO PHOTO INSPECTOR & ZOOM (GESER POSISI & PERBESAR FOTO)
 // ==========================================================================
+function applyPreviewMaskShape(targetId) {
+  var maskEl = document.getElementById('canvasMaskShape');
+  if (!maskEl) return;
+
+  if (targetId === 'dynHeroPhoto') {
+    maskEl.style.width = '162px';
+    maskEl.style.height = '204px';
+    maskEl.style.borderRadius = '85px 85px 10px 10px';
+  } else if (targetId && targetId.indexOf('dynStoryFoto') === 0) {
+    maskEl.style.width = '208px';
+    maskEl.style.height = '156px';
+    maskEl.style.borderRadius = '8px';
+  } else if (targetId && targetId.indexOf('dynGaleri') === 0) {
+    maskEl.style.width = '156px';
+    maskEl.style.height = '208px';
+    maskEl.style.borderRadius = '10px';
+  } else {
+    maskEl.style.width = '196px';
+    maskEl.style.height = '196px';
+    maskEl.style.borderRadius = '50%';
+  }
+}
+
 function openPhotoAdjustModal(targetId) {
   currentPhotoTargetId = targetId || 'dynPhotoPria';
   var sel = document.getElementById('selTargetPhoto');
   if (sel) sel.value = currentPhotoTargetId;
+
+  applyPreviewMaskShape(currentPhotoTargetId);
 
   var targetImg = document.getElementById(currentPhotoTargetId);
   var previewImg = document.getElementById('canvasPreviewImg');
@@ -4196,6 +4239,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initCountdown();
   initScrollReveal();
   initCanvasDragInteractions();
+  renderGuestTwibbonSelector();
   loadInitialAppData();
 
   var secretTapTarget = document.getElementById('secretFooterTap');
@@ -4231,7 +4275,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   } catch (e) {}
 
-  // Inisialisasi elemen DOM setelah halaman ter-load sepenuhnya
   coverOverlay = document.getElementById('coverOverlay');
   weddingAudio = document.getElementById('weddingAudio');
   floatingPlayer = document.getElementById('floatingPlayer');
