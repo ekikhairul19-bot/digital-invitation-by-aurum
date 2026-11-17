@@ -36,6 +36,12 @@ padding: 0;
 -webkit-tap-highlight-color: transparent;
 }
 
+html, body {
+width: 100%;
+max-width: 100%;
+overflow-x: hidden;
+}
+
 body {
 background-color: #1A0307;
 font-family: var(--font-sans);
@@ -45,7 +51,6 @@ display: flex;
 justify-content: center;
 min-height: 100vh;
 min-height: 100dvh;
-overflow-x: hidden;
 }
 
 /* Canvas Partikel Kelopak Hati & Kilau Emas Melayang */
@@ -59,17 +64,30 @@ pointer-events: none;
 z-index: 100;
 }
 
-/* Viewport Seluler Elegan (Mobile-First 480px) */
+/* Viewport Responsif: Lebar Penuh 100% di Layar Ponsel/Tablet & Elegan di Desktop */
 .app-viewport {
 width: 100%;
-max-width: 480px;
+max-width: 560px;
 background-color: var(--color-cream-bg);
 min-height: 100vh;
 min-height: 100dvh;
 position: relative;
 box-shadow: 0 0 60px rgba(0, 0, 0, 0.65);
 overflow-x: hidden;
-padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 768px) {
+body {
+background-color: var(--color-cream-bg) !important;
+display: block !important;
+}
+.app-viewport {
+max-width: 100% !important;
+width: 100% !important;
+margin: 0 !important;
+box-shadow: none !important;
+}
 }
 
 /* ==========================================================================
@@ -232,15 +250,15 @@ transform: scaleX(-1);
 
 .couple-photo-outer {
 position: relative;
-width: 120px;
+width: 136px;
 margin: 0 auto 16px auto;
 }
 
 .eucalyptus-accent-pria {
 position: absolute;
 top: -16px;
-left: -20px;
-width: 68px;
+left: -18px;
+width: 72px;
 height: auto;
 pointer-events: none;
 z-index: 5;
@@ -251,8 +269,8 @@ transform: rotate(-18deg);
 .eucalyptus-accent-wanita {
 position: absolute;
 bottom: -12px;
-right: -20px;
-width: 68px;
+right: -18px;
+width: 72px;
 height: auto;
 pointer-events: none;
 z-index: 5;
@@ -277,8 +295,8 @@ transition: width 0.3s ease;
 .flower-event-pastel {
 position: absolute;
 top: -24px;
-right: -20px;
-width: 150px;
+right: -16px;
+width: 145px;
 height: auto;
 pointer-events: none;
 z-index: 10;
@@ -294,9 +312,9 @@ margin-top: 10px;
 .flower-journey-garland-left {
 position: absolute;
 top: -95px;
-left: -20px;
-width: 210px;
-height: 520px;
+left: -16px;
+width: 195px;
+height: 500px;
 object-fit: contain;
 object-position: top center;
 pointer-events: none;
@@ -308,9 +326,9 @@ filter: drop-shadow(0 4px 10px rgba(42, 6, 11, 0.22));
 .flower-journey-garland-right {
 position: absolute;
 top: -95px;
-right: -20px;
-width: 210px;
-height: 520px;
+right: -16px;
+width: 195px;
+height: 500px;
 object-fit: contain;
 object-position: top center;
 pointer-events: none;
@@ -334,7 +352,7 @@ filter: drop-shadow(0 6px 16px rgba(42, 6, 11, 0.32));
 .flower-journey-orchid {
 position: absolute;
 top: -16px;
-right: -14px;
+right: -12px;
 width: 110px;
 height: auto;
 pointer-events: none;
@@ -345,13 +363,13 @@ transform-origin: top right;
 
 @media (max-width: 380px) {
 .flower-cover-branch {
-width: 90px;
-height: 190px;
+width: 88px;
+height: 185px;
 left: -10px;
 transform: scaleX(-1);
 }
 .flower-cover-lily, .flower-cover-corner {
-width: 135px;
+width: 130px;
 bottom: -18px;
 right: -12px;
 }
@@ -364,7 +382,7 @@ bottom: -14px;
 left: -12px;
 }
 .hero-photo-wrap {
-height: 380px;
+height: 410px;
 }
 .flower-twin-item {
 width: 85px;
@@ -376,30 +394,30 @@ transform: scaleX(-1);
 width: 180px;
 }
 .flower-event-pastel {
-width: 140px;
+width: 135px;
 top: -20px;
-right: -16px;
+right: -12px;
 }
 .flower-journey-garland-left {
-width: 180px;
-height: 460px;
+width: 170px;
+height: 440px;
 top: -80px;
-left: -16px;
+left: -14px;
 }
 .flower-journey-garland-right {
-width: 180px;
-height: 460px;
+width: 170px;
+height: 440px;
 top: -80px;
-right: -16px;
+right: -14px;
 transform: scaleX(-1);
 }
 .flower-ribbon-roses {
-width: 145px;
+width: 140px;
 }
 .flower-journey-orchid {
-width: 105px;
+width: 100px;
 top: -14px;
-right: -12px;
+right: -10px;
 }
 }
 
@@ -412,7 +430,7 @@ top: 0;
 left: 50%;
 transform: translateX(-50%);
 width: 100%;
-max-width: 480px;
+max-width: 560px;
 height: 100vh;
 height: 100dvh;
 background: radial-gradient(circle at 50% 30%, #520F19 0%, #200407 100%);
@@ -421,10 +439,23 @@ display: flex;
 flex-direction: column;
 align-items: center;
 justify-content: center;
-padding: 24px;
+padding: 18px;
 text-align: center;
 color: #FFF;
 transition: transform 1.1s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.9s ease;
+}
+
+@media (max-width: 768px) {
+.cover-overlay {
+left: 0 !important;
+right: 0 !important;
+transform: none;
+max-width: 100% !important;
+width: 100% !important;
+}
+.cover-overlay.opened {
+transform: translateY(-100%) !important;
+}
 }
 
 .cover-overlay.opened {
@@ -435,7 +466,7 @@ pointer-events: none;
 
 .envelope-scene {
 width: 100%;
-max-width: 380px;
+max-width: 440px;
 position: relative;
 perspective: 1000px;
 }
@@ -468,7 +499,7 @@ font-weight: 600;
 .cover-envelope-card {
 background: #FAF6EF;
 border-radius: var(--radius-arch);
-padding: 38px 22px 28px 22px;
+padding: 38px 20px 28px 20px;
 border: 2px solid var(--color-gold-accent);
 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 position: relative;
@@ -609,16 +640,16 @@ FLOATING AUDIO CONTROLLER (VINYL STYLE)
 ========================================================================== */
 .audio-floating-player {
 position: fixed;
-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-right: 20px;
+bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+right: 14px;
 z-index: 800;
 display: flex;
 align-items: center;
-gap: 10px;
-background: rgba(252, 249, 242, 0.95);
+gap: 9px;
+background: rgba(252, 249, 242, 0.96);
 backdrop-filter: blur(10px);
 -webkit-backdrop-filter: blur(10px);
-padding: 6px 14px 6px 8px;
+padding: 6px 13px 6px 7px;
 border-radius: 40px;
 border: 1px solid var(--color-gold-accent);
 box-shadow: 0 6px 20px rgba(42, 6, 11, 0.25);
@@ -635,8 +666,8 @@ transform: scale(0.96);
 }
 
 .vinyl-disc {
-width: 36px;
-height: 36px;
+width: 34px;
+height: 34px;
 border-radius: 50%;
 background: radial-gradient(circle, #222 25%, #111 26%, #111 70%, #222 71%);
 border: 2px solid var(--color-gold-accent);
@@ -654,16 +685,16 @@ animation-play-state: running;
 
 .vinyl-groove {
 position: absolute;
-width: 22px;
-height: 22px;
+width: 20px;
+height: 20px;
 border-radius: 50%;
 border: 1px dashed rgba(229, 195, 120, 0.4);
 pointer-events: none;
 }
 
 .vinyl-center {
-width: 12px;
-height: 12px;
+width: 11px;
+height: 11px;
 background: #7A1A27;
 border-radius: 50%;
 border: 1px solid #FFF;
@@ -681,11 +712,11 @@ flex-direction: column;
 }
 
 .audio-title {
-font-size: 11px;
+font-size: 10.5px;
 font-weight: 700;
 color: var(--color-burgundy);
 text-transform: uppercase;
-letter-spacing: 0.5px;
+letter-spacing: 0.4px;
 }
 
 .audio-sub {
@@ -731,7 +762,7 @@ animation: eqBounce 0.6s infinite alternate-reverse ease-in-out 0.1s;
 HERO SECTION
 ========================================================================== */
 .hero-section {
-padding: 44px 20px 20px 20px;
+padding: 40px 12px 18px 12px;
 text-align: center;
 position: relative;
 }
@@ -740,7 +771,7 @@ position: relative;
 background: var(--color-card-bg);
 border-radius: 195px 195px 24px 24px;
 border: 1px solid var(--color-border-subtle);
-padding: 32px 14px 28px 14px;
+padding: 32px 10px 26px 10px;
 box-shadow: var(--shadow-soft);
 position: relative;
 }
@@ -748,14 +779,14 @@ position: relative;
 .arch-inner-border {
 border: 1px solid var(--color-border-burgundy);
 border-radius: 185px 185px 18px 18px;
-padding: 14px 12px 24px 12px;
+padding: 12px 10px 24px 10px;
 position: relative;
 }
 
 .hero-photo-wrap {
 width: 100%;
 max-width: 100%;
-height: 430px;
+height: 450px;
 margin: 0 auto 20px auto;
 border-radius: 175px 175px 14px 14px;
 overflow: hidden;
@@ -769,6 +800,7 @@ cursor: zoom-in;
 width: 100%;
 height: 100%;
 object-fit: cover;
+object-position: center 20%;
 display: block;
 transform-origin: center center;
 transition: object-position 0.3s ease, transform 0.3s ease;
@@ -835,14 +867,14 @@ z-index: 12;
 QUOTE SECTION
 ========================================================================== */
 .section-quote {
-padding: 20px;
+padding: 16px 12px;
 text-align: center;
 }
 
 .quote-card {
 background: var(--color-card-inner);
 border-radius: 16px;
-padding: 28px 22px;
+padding: 26px 18px;
 border: 1px solid var(--color-border-subtle);
 box-shadow: var(--shadow-soft);
 position: relative;
@@ -863,7 +895,7 @@ font-size: 17px;
 font-style: italic;
 line-height: 1.7;
 color: var(--color-burgundy-deep);
-max-width: 90%;
+max-width: 94%;
 margin: 0 auto;
 white-space: pre-line;
 }
@@ -882,7 +914,7 @@ display: block;
 MEMPELAI SECTION
 ========================================================================== */
 .section-mempelai {
-padding: 24px 20px;
+padding: 20px 12px;
 text-align: center;
 position: relative;
 }
@@ -901,7 +933,7 @@ font-family: var(--font-serif);
 font-size: 14px;
 color: var(--color-text-muted);
 margin-bottom: 12px;
-padding: 0 12px;
+padding: 0 10px;
 line-height: 1.6;
 }
 
@@ -909,7 +941,7 @@ line-height: 1.6;
 font-family: var(--font-serif);
 font-size: 28px;
 color: var(--color-burgundy-deep);
-margin-bottom: 20px;
+margin-bottom: 18px;
 font-weight: 700;
 }
 
@@ -917,15 +949,15 @@ font-weight: 700;
 background: #FFF;
 border-radius: var(--radius-card);
 border: 1px solid var(--color-border-subtle);
-padding: 26px 20px;
-margin-bottom: 20px;
+padding: 24px 16px;
+margin-bottom: 18px;
 box-shadow: var(--shadow-soft);
 position: relative;
 }
 
 .couple-photo-frame {
-width: 105px;
-height: 105px;
+width: 124px;
+height: 124px;
 border-radius: 50%;
 margin: 0 auto;
 overflow: hidden;
@@ -940,6 +972,7 @@ cursor: zoom-in;
 width: 100%;
 height: 100%;
 object-fit: cover;
+object-position: center 20%;
 transform-origin: center center;
 transition: object-position 0.3s ease, transform 0.3s ease;
 }
@@ -980,7 +1013,7 @@ transition: background 0.2s;
 COUNTDOWN TIMER
 ========================================================================== */
 .section-countdown {
-padding: 20px;
+padding: 16px 12px;
 text-align: center;
 }
 
@@ -989,7 +1022,7 @@ display: grid;
 grid-template-columns: repeat(4, 1fr);
 gap: 8px;
 background: var(--color-card-bg);
-padding: 20px 14px;
+padding: 20px 12px;
 border-radius: 18px;
 border: 1px solid var(--color-border-subtle);
 box-shadow: var(--shadow-soft);
@@ -1022,7 +1055,7 @@ font-weight: 600;
 RANGKAIAN ACARA
 ========================================================================== */
 .section-events {
-padding: 24px 20px;
+padding: 20px 12px;
 text-align: center;
 position: relative;
 }
@@ -1031,8 +1064,8 @@ position: relative;
 background: #FFF;
 border-radius: var(--radius-arch);
 border: 1px solid var(--color-border-subtle);
-padding: 34px 20px 28px 20px;
-margin-bottom: 24px;
+padding: 32px 14px 24px 14px;
+margin-bottom: 22px;
 box-shadow: var(--shadow-soft);
 position: relative;
 }
@@ -1040,7 +1073,7 @@ position: relative;
 .event-inner {
 border: 1px solid var(--color-border-burgundy);
 border-radius: 120px 120px 16px 16px;
-padding: 28px 16px 22px 16px;
+padding: 26px 14px 20px 14px;
 }
 
 .event-badge {
@@ -1132,7 +1165,7 @@ border: 1px solid var(--color-border-burgundy);
 LOVE STORY (POLAROID & MODE NARASI ELEGAN SAAT FOTO DINONAKTIFKAN)
 ========================================================================== */
 .section-lovestory {
-padding: 24px 20px;
+padding: 20px 12px;
 text-align: center;
 position: relative;
 }
@@ -1140,8 +1173,8 @@ position: relative;
 .polaroid-gallery {
 display: flex;
 flex-direction: column;
-gap: 22px;
-margin-top: 16px;
+gap: 20px;
+margin-top: 14px;
 }
 
 .polaroid-card {
@@ -1188,8 +1221,9 @@ overflow: visible;
 
 .polaroid-photo {
 width: 100%;
-height: 200px;
-border-radius: 4px;
+aspect-ratio: 4 / 3;
+height: auto;
+border-radius: 6px;
 overflow: hidden;
 background: #EEE;
 position: relative;
@@ -1200,6 +1234,7 @@ cursor: zoom-in;
 width: 100%;
 height: 100%;
 object-fit: cover;
+object-position: center 20%;
 transform-origin: center center;
 transition: object-position 0.3s ease, transform 0.3s ease;
 }
@@ -1237,10 +1272,10 @@ white-space: pre-line;
 }
 
 /* ==========================================================================
-GALERI PREWEDDING
+GALERI PREWEDDING & LIGHTBOX CENTER PRESISI (ANTI-TERPOTONG)
 ========================================================================== */
 .section-gallery {
-padding: 24px 20px;
+padding: 20px 12px;
 text-align: center;
 }
 
@@ -1254,69 +1289,89 @@ margin-top: 14px;
 .gallery-item {
 border-radius: 12px;
 overflow: hidden;
-height: 160px;
+aspect-ratio: 3 / 4;
+height: auto;
 border: 1.5px solid var(--color-gold-accent);
 box-shadow: var(--shadow-soft);
 cursor: pointer;
 position: relative;
-}
-
-.gallery-item:nth-child(1), .gallery-item:nth-child(4) {
-height: 210px;
+background: #2A060B;
 }
 
 .gallery-thumb {
 width: 100%;
 height: 100%;
 object-fit: cover;
+object-position: center 20%;
+display: block;
 transition: object-position 0.3s ease, transform 0.4s ease;
 }
 
 .gallery-item:hover .gallery-thumb {
-transform: scale(1.06);
+transform: scale(1.04);
 }
 
+/* Lightbox Pembesar Foto: Selalu Presisi di Tengah Layar (Center) & Utuh Tanpa Terpotong */
 .lightbox-modal {
 position: fixed;
 top: 0;
 left: 0;
+right: 0;
+bottom: 0;
 width: 100%;
 height: 100%;
-background: rgba(0, 0, 0, 0.9);
-z-index: 99999;
+background: rgba(15, 2, 4, 0.94);
+z-index: 999999;
 display: none;
 align-items: center;
 justify-content: center;
 padding: 20px;
+box-sizing: border-box;
+overflow: hidden;
 }
 
 .lightbox-modal.show {
-display: flex;
+display: flex !important;
 }
 
 .lightbox-content {
-max-width: 90%;
-max-height: 80vh;
-border-radius: 10px;
+display: block;
+margin: 0 auto;
+max-width: 90vw;
+max-height: 82vh;
+max-height: 82dvh;
+width: auto;
+height: auto;
+object-fit: contain;
+border-radius: 12px;
 border: 2px solid var(--color-gold-bright);
-box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+box-shadow: 0 12px 44px rgba(0, 0, 0, 0.85);
 }
 
 .lightbox-close {
-position: absolute;
-top: 20px;
-right: 25px;
+position: fixed;
+top: 16px;
+right: 16px;
+width: 40px;
+height: 40px;
+border-radius: 50%;
+background: rgba(42, 6, 11, 0.92);
+border: 1.5px solid var(--color-gold-accent);
 color: #FFF;
-font-size: 32px;
-font-weight: bold;
+font-size: 24px;
+line-height: 1;
+display: flex;
+align-items: center;
+justify-content: center;
 cursor: pointer;
+z-index: 1000000;
 }
 
 /* ==========================================================================
 AMPLOP DIGITAL & QRIS RESPONSIF
 ========================================================================== */
 .section-registry {
-padding: 24px 20px;
+padding: 20px 12px;
 text-align: center;
 }
 
@@ -1341,16 +1396,16 @@ box-shadow: var(--shadow-wax);
 font-size: 13px;
 color: var(--color-text-muted);
 line-height: 1.6;
-margin-bottom: 20px;
-padding: 0 10px;
+margin-bottom: 18px;
+padding: 0 8px;
 }
 
 .bank-card {
 background: #FFF;
 border-radius: 16px;
 border: 1px solid var(--color-border-subtle);
-padding: 20px;
-margin-bottom: 14px;
+padding: 18px;
+margin-bottom: 12px;
 box-shadow: var(--shadow-soft);
 text-align: left;
 position: relative;
@@ -1449,7 +1504,7 @@ box-shadow: var(--shadow-soft);
 RSVP & BUKU UCAPAN
 ========================================================================== */
 .section-rsvp {
-padding: 24px 20px;
+padding: 20px 12px;
 text-align: center;
 }
 
@@ -1457,7 +1512,7 @@ text-align: center;
 background: #FFF;
 border-radius: var(--radius-arch);
 border: 1px solid var(--color-border-subtle);
-padding: 34px 20px 28px 20px;
+padding: 32px 16px 26px 16px;
 box-shadow: var(--shadow-soft);
 overflow: hidden;
 }
@@ -1487,6 +1542,7 @@ margin-bottom: 4px;
 .form-control {
 width: 100%;
 max-width: 100%;
+min-width: 0;
 padding: 10px 12px;
 border-radius: 8px;
 border: 1px solid #D5C8BD;
@@ -1496,6 +1552,7 @@ font-size: 12.5px;
 color: var(--color-text-dark);
 outline: none;
 transition: border 0.2s, box-shadow 0.2s;
+box-sizing: border-box;
 }
 
 textarea.form-control {
@@ -1724,7 +1781,7 @@ left: 50%;
 transform: translateX(-50%) translateY(30px);
 background: #2D090E;
 color: #FFF;
-padding: 10px 20px;
+padding: 10px 18px;
 border-radius: 30px;
 font-size: 12px;
 font-weight: 600;
@@ -1734,7 +1791,8 @@ opacity: 0;
 pointer-events: none;
 transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 z-index: 999999;
-white-space: nowrap;
+max-width: 90vw;
+text-align: center;
 }
 
 .toast-msg.show {
@@ -1746,7 +1804,7 @@ opacity: 1;
 FOOTER & LOGO + WATERMARK EKOSISTEM AURUM PROJECT
 ========================================================================== */
 .app-footer {
-padding: 30px 20px calc(30px + env(safe-area-inset-bottom, 0px)) 20px;
+padding: 28px 16px calc(36px + env(safe-area-inset-bottom, 0px)) 16px;
 text-align: center;
 font-size: 12px;
 color: var(--color-text-muted);
@@ -1841,7 +1899,7 @@ box-shadow: 0 3px 10px rgba(20, 77, 46, 0.22);
 }
 
 /* ==========================================================================
-ADMIN STUDIO SUB-TABS & GROUPED CARDS (RINGKAS TANPA BANYAK SCROLL)
+ADMIN STUDIO SUB-TABS & GROUPED CARDS (RINGKAS & LEGA DI HP)
 ========================================================================== */
 .studio-subtabs {
 display: flex;
@@ -1858,9 +1916,9 @@ white-space: nowrap;
 background: #FFF;
 border: 1px solid #D5C8BD;
 color: var(--color-text-muted);
-padding: 8px 10px;
+padding: 9px 10px;
 border-radius: 8px;
-font-size: 11px;
+font-size: 11.5px;
 font-weight: 600;
 cursor: pointer;
 transition: all 0.2s ease;
@@ -1888,14 +1946,14 @@ animation: screenFadeIn 0.2s ease-out;
 background: #FFF;
 border: 1px solid var(--color-border-subtle);
 border-radius: 12px;
-padding: 13px;
+padding: 14px;
 margin-bottom: 12px;
 box-shadow: 0 2px 8px rgba(42, 6, 11, 0.03);
 }
 
 .studio-card-title {
 font-family: var(--font-serif);
-font-size: 14.5px;
+font-size: 15px;
 font-weight: 700;
 color: var(--color-burgundy);
 margin-bottom: 10px;
@@ -1909,35 +1967,46 @@ grid-template-columns: 1fr 1fr;
 gap: 8px;
 }
 
+@media (max-width: 480px) {
+.form-row-2 {
+grid-template-columns: 1fr;
+gap: 0;
+}
+}
+
 /* ==========================================================================
-MODAL DIALOGS (QRIS & GIFT)
+MODAL DIALOGS (QRIS, GIFT, PASS, TWIBBON, INSPECTOR)
 ========================================================================== */
 .custom-modal-backdrop {
 position: fixed;
 top: 0;
 left: 0;
+right: 0;
+bottom: 0;
 width: 100%;
 height: 100%;
-background: rgba(0, 0, 0, 0.7);
+background: rgba(0, 0, 0, 0.74);
 z-index: 99990;
 display: none;
 align-items: center;
 justify-content: center;
-padding: 20px;
+padding: 16px;
+box-sizing: border-box;
 }
 
 .custom-modal-backdrop.show {
-display: flex;
+display: flex !important;
 }
 
 .custom-modal-dialog {
 background: #FFF;
 border-radius: 18px;
 width: 100%;
-max-width: 380px;
-padding: 20px;
-box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+max-width: 420px;
+padding: 18px;
+box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
 border: 1px solid var(--color-gold-accent);
+margin: auto;
 }
 
 .modal-header {
@@ -1959,14 +2028,15 @@ color: var(--color-burgundy);
 .modal-close-btn {
 background: none;
 border: none;
-font-size: 22px;
+font-size: 24px;
 cursor: pointer;
 color: #666;
+padding: 0 4px;
 }
 
 .qris-img {
 width: 100%;
-max-width: 250px;
+max-width: 260px;
 border-radius: 10px;
 border: 1px solid #CCC;
 margin: 0 auto;
@@ -2011,8 +2081,8 @@ flex-shrink: 0;
 }
 
 .svg-top-brand {
-width: 20px;
-height: 20px;
+width: 18px;
+height: 18px;
 color: var(--color-gold-bright);
 display: block;
 filter: drop-shadow(0 1px 3px rgba(229, 195, 120, 0.4));
@@ -2849,12 +2919,22 @@ top: 0;
 left: 50%;
 transform: translateX(-50%);
 width: 100%;
-max-width: 480px;
+max-width: 560px;
 background: #2A060B;
 border-bottom: 2px solid var(--color-gold-accent);
-padding: 10px 14px;
+padding: 12px 14px;
 z-index: 99998;
 box-shadow: 0 8px 25px rgba(0, 0, 0, 0.55);
+}
+
+@media (max-width: 768px) {
+.studio-passcode-bar {
+left: 0 !important;
+right: 0 !important;
+transform: none !important;
+max-width: 100% !important;
+width: 100% !important;
+}
 }
 
 .passcode-bar-inner {
@@ -2869,7 +2949,7 @@ display: flex;
 align-items: center;
 gap: 6px;
 color: var(--color-gold-bright);
-font-size: 12px;
+font-size: 12.5px;
 font-weight: 700;
 }
 
@@ -2880,12 +2960,12 @@ gap: 6px;
 }
 
 .studio-pin-field {
-width: 82px;
-padding: 6px 10px;
+width: 90px;
+padding: 7px 10px;
 border-radius: 6px;
 border: 1px solid var(--color-gold-accent);
 background: #FFF;
-font-size: 13px;
+font-size: 14px;
 font-weight: 700;
 text-align: center;
 letter-spacing: 2px;
@@ -2895,9 +2975,9 @@ letter-spacing: 2px;
 background: linear-gradient(135deg, #C5A059, #9A7730);
 color: #FFF;
 border: none;
-padding: 6px 12px;
+padding: 7px 14px;
 border-radius: 6px;
-font-size: 11.5px;
+font-size: 12px;
 font-weight: 700;
 cursor: pointer;
 }
@@ -2906,7 +2986,7 @@ cursor: pointer;
 background: none;
 border: none;
 color: #FFF;
-font-size: 20px;
+font-size: 22px;
 cursor: pointer;
 padding: 0 4px;
 }
@@ -2915,12 +2995,15 @@ padding: 0 4px;
 position: sticky;
 top: 0;
 width: 100%;
+max-width: 100%;
+box-sizing: border-box;
 background: linear-gradient(135deg, #2A060B 0%, #4A0E17 100%);
 color: #FFF;
-padding: 9px 14px;
+padding: 9px 10px;
 display: flex;
 align-items: center;
 justify-content: space-between;
+gap: 6px;
 z-index: 950;
 border-bottom: 1.5px solid var(--color-gold-accent);
 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
@@ -2929,28 +3012,35 @@ box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 .top-header-left {
 display: flex;
 align-items: center;
-gap: 8px;
+gap: 6px;
+min-width: 0;
+flex: 1 1 auto;
 }
 
 .top-brand-info {
 display: flex;
 flex-direction: column;
 line-height: 1.2;
+min-width: 0;
 }
 
 .top-brand-name {
 font-family: var(--font-cinzel);
-font-size: 12px;
+font-size: 11.5px;
 font-weight: 700;
 color: var(--color-gold-bright);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
 }
 
 .top-brand-status {
-font-size: 9.5px;
+font-size: 9px;
 color: #E8D9DC;
 display: flex;
 align-items: center;
 gap: 4px;
+white-space: nowrap;
 }
 
 .pulse-dot {
@@ -2959,26 +3049,29 @@ height: 6px;
 border-radius: 50%;
 background: #34D399;
 display: inline-block;
+flex-shrink: 0;
 }
 
 .top-header-right {
 display: flex;
 align-items: center;
-gap: 6px;
+gap: 5px;
+flex-shrink: 0;
 }
 
 .btn-top-mode, .btn-top-save {
 background: rgba(255, 255, 255, 0.12);
 border: 1px solid var(--color-gold-accent);
 color: #FFF;
-padding: 5px 9px;
+padding: 5px 8px;
 border-radius: 6px;
-font-size: 10.5px;
+font-size: 10px;
 font-weight: 600;
 cursor: pointer;
 display: inline-flex;
 align-items: center;
 gap: 4px;
+white-space: nowrap;
 }
 
 .btn-top-save {
@@ -2997,6 +3090,7 @@ cursor: pointer;
 display: inline-flex;
 align-items: center;
 justify-content: center;
+flex-shrink: 0;
 }
 
 .app-bottom-nav {
@@ -3005,14 +3099,24 @@ bottom: 0;
 left: 50%;
 transform: translateX(-50%);
 width: 100%;
-max-width: 480px;
+max-width: 560px;
 background: #2A060B;
 border-top: 1.5px solid var(--color-gold-accent);
 display: flex;
 justify-content: space-around;
-padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)) 4px;
+padding: 7px 4px calc(7px + env(safe-area-inset-bottom, 0px)) 4px;
 z-index: 960;
 box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 768px) {
+.app-bottom-nav {
+left: 0 !important;
+right: 0 !important;
+transform: none !important;
+max-width: 100% !important;
+width: 100% !important;
+}
 }
 
 .bottom-nav-item {
@@ -3023,11 +3127,19 @@ display: flex;
 flex-direction: column;
 align-items: center;
 gap: 2px;
-font-size: 9.5px;
+font-size: 10px;
 font-weight: 600;
 cursor: pointer;
-padding: 4px 6px;
+padding: 4px 4px;
 flex: 1;
+min-width: 0;
+}
+
+.bottom-nav-label {
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+max-width: 100%;
 }
 
 .bottom-nav-item.active {
@@ -3053,7 +3165,9 @@ to { opacity: 1; transform: translateY(0); }
 }
 
 .screen-container {
-padding: 18px 16px 30px 16px;
+padding: 16px 14px 36px 14px;
+width: 100%;
+box-sizing: border-box;
 }
 
 .screen-header {
@@ -3064,7 +3178,7 @@ padding-bottom: 10px;
 
 .screen-title {
 font-family: var(--font-serif);
-font-size: 21px;
+font-size: 20px;
 font-weight: 700;
 color: var(--color-burgundy);
 display: flex;
@@ -3164,7 +3278,7 @@ margin-bottom: 12px;
 
 .search-input-mini {
 padding: 8px 11px;
-font-size: 11.5px;
+font-size: 12px;
 }
 
 .filter-pills-row {
@@ -3192,7 +3306,7 @@ color: #FFF;
 }
 
 /* ==========================================================================
-PHOTO STUDIO, AUDIO & TWIBBON MANAGER
+PHOTO STUDIO, AUDIO & TWIBBON MANAGER (1 KOLOM PENUH DI HP AGAR LEGA)
 ========================================================================== */
 .toggle-switch-card {
 background: #FFF;
@@ -3204,37 +3318,48 @@ padding: 12px;
 .photo-studio-slots-grid {
 display: grid;
 grid-template-columns: repeat(2, 1fr);
-gap: 8px;
+gap: 10px;
+}
+
+@media (max-width: 600px) {
+.photo-studio-slots-grid {
+grid-template-columns: 1fr;
+}
 }
 
 .photo-slot-card {
 background: #FFF;
 border: 1px solid var(--color-border-subtle);
 border-radius: 10px;
-padding: 9px;
+padding: 12px;
 display: flex;
 flex-direction: column;
-gap: 5px;
+gap: 7px;
+min-width: 0;
+overflow: hidden;
 }
 
 .photo-slot-title {
-font-size: 10.5px;
+font-size: 11.5px;
 font-weight: 700;
 color: var(--color-burgundy);
 }
 
 .input-xs {
-padding: 6px 8px;
-font-size: 11px;
+width: 100%;
+min-width: 0;
+padding: 8px 10px;
+font-size: 12px;
+text-overflow: ellipsis;
 }
 
 .btn-slot-adjust {
 background: var(--color-burgundy-soft);
 border: 1px solid var(--color-border-burgundy);
 color: var(--color-burgundy);
-padding: 5px 8px;
-border-radius: 6px;
-font-size: 10px;
+padding: 7px 10px;
+border-radius: 7px;
+font-size: 11px;
 font-weight: 700;
 cursor: pointer;
 }
@@ -3592,8 +3717,8 @@ color: var(--color-burgundy);
 
 .canvas-preview-wrapper {
 position: relative;
-width: 200px;
-height: 200px;
+width: 230px;
+height: 230px;
 margin: 0 auto 12px auto;
 background: #240509;
 border-radius: 14px;
@@ -3606,8 +3731,8 @@ border: 1.5px solid var(--color-gold-accent);
 }
 
 .canvas-mask-circle {
-width: 170px;
-height: 170px;
+width: 196px;
+height: 196px;
 border-radius: 50%;
 overflow: hidden;
 border: 2px solid var(--color-gold-bright);
@@ -3624,10 +3749,10 @@ position: absolute;
 bottom: 6px;
 left: 50%;
 transform: translateX(-50%);
-background: rgba(0, 0, 0, 0.68);
+background: rgba(0, 0, 0, 0.72);
 color: #FFF;
-font-size: 9px;
-padding: 3px 8px;
+font-size: 9.5px;
+padding: 3px 9px;
 border-radius: 10px;
 white-space: nowrap;
 display: inline-flex;
@@ -3639,18 +3764,18 @@ gap: 4px;
 display: flex;
 flex-direction: column;
 align-items: center;
-gap: 4px;
+gap: 5px;
 }
 
 .dpad-middle-row {
 display: flex;
 align-items: center;
-gap: 8px;
+gap: 10px;
 }
 
 .btn-dpad {
-width: 34px;
-height: 34px;
+width: 38px;
+height: 38px;
 border-radius: 8px;
 border: 1px solid #D5C8BD;
 background: #FAF5ED;
@@ -3679,12 +3804,12 @@ display: none;
 position: absolute;
 bottom: 8px;
 right: 8px;
-background: rgba(42, 6, 11, 0.88);
+background: rgba(42, 6, 11, 0.9);
 color: var(--color-gold-bright);
 border: 1px solid var(--color-gold-accent);
-padding: 4px 9px;
+padding: 5px 10px;
 border-radius: 20px;
-font-size: 10px;
+font-size: 10.5px;
 font-weight: 700;
 cursor: pointer;
 align-items: center;
