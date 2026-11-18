@@ -29,7 +29,7 @@ DESIGN TOKENS - ROYAL BURGUNDY ENVELOPE & LUXURY IVORY
 --radius-card: 20px;
 }
 
-{
+*, *::before, *::after {
 box-sizing: border-box;
 margin: 0;
 padding: 0;
@@ -60,7 +60,7 @@ padding: 0;
 }
 
 @media (min-width: 521px) {
-body {
+body:not(.admin-mode-active) {
 background-color: #1A0307;
 }
 }
@@ -76,23 +76,53 @@ pointer-events: none;
 z-index: 100;
 }
 
-/* Viewport Seluler Penuh di HP, Bingkai Elegan 480px di Layar Desktop */
+/* Viewport Seluler Penuh di HP, Bingkai Elegan 480px di Desktop (Mode Tamu) */
 .app-viewport {
 width: 100%;
 max-width: 100%;
+min-width: 0;
 background-color: var(--color-cream-bg);
 min-height: 100vh;
 min-height: 100dvh;
 position: relative;
 overflow-x: hidden;
-overflow-x: clip;
 padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 521px) {
-.app-viewport {
+body:not(.admin-mode-active) .app-viewport {
 max-width: 480px;
 box-shadow: 0 0 60px rgba(0, 0, 0, 0.65);
+}
+}
+
+/* Mode Admin Studio: Selalu 100% Layar Penuh di Semua Perangkat Tanpa Ruang Gelap */
+body.admin-mode-active {
+background-color: var(--color-cream-bg);
+display: block;
+}
+
+body.admin-mode-active .app-viewport {
+width: 100%;
+max-width: 100%;
+min-width: 0;
+box-shadow: none;
+}
+
+/* Pratinjau Kanvas Undangan di dalam Admin Tetap Proporsional di Tengah Layar Lebar */
+@media (min-width: 600px) {
+body.admin-mode-active #screenInvitation > section,
+body.admin-mode-active #screenInvitation > footer {
+max-width: 500px;
+margin-left: auto;
+margin-right: auto;
+}
+
+body.admin-mode-active .screen-container {
+max-width: 960px;
+margin-left: auto;
+margin-right: auto;
+padding: 22px 24px 40px 24px;
 }
 }
 
@@ -453,7 +483,7 @@ transition: transform 1.1s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.9s ease;
 }
 
 @media (min-width: 521px) {
-.cover-overlay {
+body:not(.admin-mode-active) .cover-overlay {
 max-width: 480px;
 }
 }
@@ -1527,6 +1557,7 @@ margin-bottom: 2px;
 text-align: left;
 margin-bottom: 12px;
 min-width: 0;
+width: 100%;
 max-width: 100%;
 }
 
@@ -1901,20 +1932,23 @@ box-shadow: 0 3px 10px rgba(20, 77, 46, 0.22);
 }
 
 /* ==========================================================================
-ADMIN STUDIO SUB-TABS & GROUPED CARDS (RINGKAS & ANTI-MELAR)
+ADMIN STUDIO SUB-TABS & GROUPED CARDS (RINGKAS & ANTI-TERPOTONG)
 ========================================================================== */
 .studio-subtabs {
 display: flex;
+flex-wrap: wrap;
 gap: 6px;
-overflow-x: auto;
-padding-bottom: 6px;
+padding-bottom: 8px;
 margin-bottom: 14px;
 border-bottom: 1px solid var(--color-border-subtle);
+width: 100%;
 max-width: 100%;
+min-width: 0;
 }
 
 .btn-subtab {
-flex: 1;
+flex: 1 1 auto;
+min-width: 0;
 white-space: nowrap;
 background: #FFF;
 border: 1px solid #D5C8BD;
@@ -1958,6 +1992,7 @@ box-shadow: 0 2px 8px rgba(42, 6, 11, 0.03);
 width: 100%;
 max-width: 100%;
 min-width: 0;
+overflow: hidden;
 }
 
 .studio-card-title {
@@ -1976,13 +2011,15 @@ grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 gap: 8px;
 width: 100%;
 max-width: 100%;
+min-width: 0;
 }
 
 .form-row-2 > * {
 min-width: 0;
+max-width: 100%;
 }
 
-@media (max-width: 375px) {
+@media (max-width: 390px) {
 .form-row-2 {
 grid-template-columns: minmax(0, 1fr);
 }
@@ -2944,7 +2981,7 @@ box-shadow: 0 8px 25px rgba(0, 0, 0, 0.55);
 }
 
 @media (min-width: 521px) {
-.studio-passcode-bar {
+body:not(.admin-mode-active) .studio-passcode-bar {
 max-width: 480px;
 }
 }
@@ -2954,6 +2991,8 @@ display: flex;
 align-items: center;
 justify-content: space-between;
 gap: 8px;
+max-width: 960px;
+margin: 0 auto;
 }
 
 .passcode-label {
@@ -3008,13 +3047,15 @@ position: sticky;
 top: 0;
 width: 100%;
 max-width: 100%;
+min-width: 0;
+overflow: hidden;
 background: linear-gradient(135deg, #2A060B 0%, #4A0E17 100%);
 color: #FFF;
-padding: 8px 10px;
+padding: 9px 12px;
 display: flex;
 align-items: center;
 justify-content: space-between;
-gap: 6px;
+gap: 8px;
 z-index: 950;
 border-bottom: 1.5px solid var(--color-gold-accent);
 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
@@ -3026,6 +3067,7 @@ align-items: center;
 gap: 7px;
 min-width: 0;
 flex: 1 1 auto;
+overflow: hidden;
 }
 
 .top-brand-icon {
@@ -3078,7 +3120,7 @@ flex-shrink: 0;
 background: rgba(255, 255, 255, 0.12);
 border: 1px solid var(--color-gold-accent);
 color: #FFF;
-padding: 5px 8px;
+padding: 5px 9px;
 border-radius: 6px;
 font-size: 10px;
 font-weight: 600;
@@ -3096,10 +3138,10 @@ font-weight: 700;
 }
 
 .btn-top-exit {
-background: rgba(255, 255, 255, 0.12);
-border: 1px solid rgba(255, 255, 255, 0.3);
+background: rgba(255, 255, 255, 0.14);
+border: 1px solid rgba(255, 255, 255, 0.35);
 color: #FFF;
-padding: 5px 6px;
+padding: 5px 7px;
 border-radius: 6px;
 cursor: pointer;
 display: inline-flex;
@@ -3111,8 +3153,8 @@ flex-shrink: 0;
 .app-bottom-nav {
 position: fixed;
 bottom: 0;
-left: 50%;
-transform: translateX(-50%);
+left: 0;
+right: 0;
 width: 100%;
 max-width: 100%;
 background: #2A060B;
@@ -3122,12 +3164,6 @@ justify-content: space-around;
 padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)) 4px;
 z-index: 960;
 box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35);
-}
-
-@media (min-width: 521px) {
-.app-bottom-nav {
-max-width: 480px;
-}
 }
 
 .bottom-nav-item {
@@ -3158,6 +3194,7 @@ APP SCREENS & ANALYTICS DASHBOARD
 display: none;
 width: 100%;
 max-width: 100%;
+min-width: 0;
 }
 
 .app-screen.active {
@@ -3173,6 +3210,7 @@ to { opacity: 1; transform: translateY(0); }
 .screen-container {
 width: 100%;
 max-width: 100%;
+min-width: 0;
 padding: 16px 14px 32px 14px;
 overflow-x: hidden;
 }
@@ -3204,6 +3242,12 @@ display: grid;
 grid-template-columns: repeat(2, minmax(0, 1fr));
 gap: 8px;
 margin-bottom: 12px;
+}
+
+@media (min-width: 600px) {
+.analytics-card-grid {
+grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 }
 
 .analytic-stat-card {
@@ -3313,7 +3357,7 @@ color: #FFF;
 }
 
 /* ==========================================================================
-PHOTO STUDIO, AUDIO & TWIBBON MANAGER (LEGA & ANTI-MELAR DI HP)
+PHOTO STUDIO, AUDIO & TWIBBON MANAGER (LEGA & ANTI-TERPOTONG)
 ========================================================================== */
 .toggle-switch-card {
 background: #FFF;
@@ -3322,6 +3366,7 @@ border-radius: 12px;
 padding: 12px;
 width: 100%;
 max-width: 100%;
+min-width: 0;
 }
 
 .photo-studio-slots-grid {
@@ -3330,6 +3375,13 @@ grid-template-columns: minmax(0, 1fr);
 gap: 10px;
 width: 100%;
 max-width: 100%;
+min-width: 0;
+}
+
+@media (min-width: 640px) {
+.photo-studio-slots-grid {
+grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 }
 
 .photo-slot-card {
@@ -3344,6 +3396,7 @@ gap: 8px 10px;
 width: 100%;
 max-width: 100%;
 min-width: 0;
+overflow: hidden;
 box-shadow: 0 2px 6px rgba(42, 6, 11, 0.03);
 }
 
@@ -3459,6 +3512,7 @@ padding: 12px;
 width: 100%;
 max-width: 100%;
 min-width: 0;
+overflow: hidden;
 }
 
 .admin-twibbon-list {
