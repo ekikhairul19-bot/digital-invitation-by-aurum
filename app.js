@@ -1,9 +1,9 @@
 /**
  * ============================================================================
- * KONFIGURASI KONEKSI BACKEND GOOGLE APPS SCRIPT (WAJIB DIISI 1x)
+ * KONFIGURASI KONEKSI BACKEND GOOGLE APPS SCRIPT (WAJIB DIISI)
  * ============================================================================
- * Tempelkan URL Web App (/exec) dari Google Apps Script Anda di bawah ini.
- * Contoh: 'https://script.google.com/macros/s/AKfycbx.../exec'
+ * Tempelkan URL Web App Google Apps Script Anda (yang berakhiran /exec)
+ * di dalam tanda kutip di bawah ini setelah melakukan Deploy pada code.gs.
  */
 var GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbywQhOPxw9XJwimK3OPOO12o9_uVhcg2NC2VLP9gw4Mp5CpueMx4a5jM3Xk3Dc78uA/exec';
 
@@ -12,7 +12,8 @@ var GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbywQhOPxw9XJwimK3
  * WEDDING INVITATION CONTROLLER & CLIENT INTERACTIVITY (GITHUB PAGES EDITION)
  * ============================================================================
  * Tema: Royal Burgundy Envelope (Crafted by Aurum Project)
- * PIN Admin divalidasi murni di sisi server (code.gs -> DEVELOPER_ADMIN_PIN).
+ * Frontend: GitHub Pages (HTTPS Utama - Kamera Depan/Belakang & QR Scanner Lancar)
+ * Backend : Google Apps Script JSON API + Google Sheets Database
  */
 
 // Status & Variabel Global
@@ -40,6 +41,65 @@ var scanAudioCtx = null;
 var scannerSessionLogs = [];
 var lastScannedRawText = '';
 var lastScannedTimestamp = 0;
+
+// ============================================================================
+// PENGHUBUNG API LINTAS-DOMAIN (GITHUB PAGES <-> GOOGLE APPS SCRIPT)
+// ============================================================================
+function isGasApiConfigured() {
+  return (
+    typeof GAS_WEB_APP_URL === 'string' &&
+    GAS_WEB_APP_URL.indexOf('https://script.google.com/') === 0
+  );
+}
+
+function callGasGet(action, paramsObj) {
+  if (!isGasApiConfigured()) {
+    return Promise.reject(new Error('URL Web App Google Apps Script belum diisi di baris atas script.js.'));
+  }
+
+  var url = new URL(GAS_WEB_APP_URL);
+  url.searchParams.set('action', action);
+  if (paramsObj && typeof paramsObj === 'object') {
+    for (var k in paramsObj) {
+      if (paramsObj.hasOwnProperty(k) && paramsObj[k] !== undefined && paramsObj[k] !== null) {
+        url.searchParams.set(k, String(paramsObj[k]));
+      }
+    }
+  }
+
+  return fetch(url.toString(), {
+    method: 'GET',
+    redirect: 'follow'
+  }).then(function(response) {
+    if (!response.ok) {
+      throw new Error('HTTP Error ' + response.status);
+    }
+    return response.json();
+  });
+}
+
+function callGasPost(action, bodyObj) {
+  if (!isGasApiConfigured()) {
+    return Promise.reject(new Error('URL Web App Google Apps Script belum diisi di baris atas script.js.'));
+  }
+
+  var payloadToSend = Object.assign({ action: action }, bodyObj || {});
+
+  // Menggunakan text/plain;charset=utf-8 agar tidak memicu preflight OPTIONS CORS di Google Apps Script
+  return fetch(GAS_WEB_APP_URL, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
+    body: JSON.stringify(payloadToSend)
+  }).then(function(response) {
+    if (!response.ok) {
+      throw new Error('HTTP Error ' + response.status);
+    }
+    return response.json();
+  });
+}
 
 // Konfigurasi Dinamis Klien Aktif (100% Sinkron dengan Config_Settings)
 var DEFAULT_WA_TEMPLATE =
@@ -120,7 +180,7 @@ var isDraggingCanvasPhoto = false;
 var canvasDragStartX = 0;
 var canvasDragStartY = 0;
 
-// Variabel Fitur: Kalender, Twibbon 9:16 Multi-Template & Kamera Scanner
+// Variabel Fitur: Kalender, Twibbon 9:16 Multi-Template & Kamera Live Depan/Belakang
 var currentCalendarEvent = null;
 var twibbonUserImg = null;
 var twibbonRotation = 0;
@@ -131,8 +191,10 @@ var isDraggingTwibbon = false;
 var twibbonDragStartX = 0;
 var twibbonDragStartY = 0;
 var twibbonLiveStream = null;
+var twibbonCameraFacing = 'user'; // 'user' = Kamera Depan, 'environment' = Kamera Belakang
+var isTwibbonCameraActive = false;
 
-// Semua template Twibbon bersifat dinamis & dapat dihapus oleh Admin
+// Semua template Twibbon bersifat dinamis & dapat dihapus/ditambah oleh Admin
 var customTwibbonTemplates = [
   { id: 'tpl-royal', name: 'Royal Arch', style: 'royal-arch', url: '', builtIn: false },
   { id: 'tpl-floral', name: 'Floral Gold', style: 'floral-gold', url: '', builtIn: false },
@@ -140,6 +202,7 @@ var customTwibbonTemplates = [
 ];
 var selectedTwibbonId = 'tpl-royal';
 var twibbonCustomOverlayCache = {};
+var twibbonCustomOverlayLoading = {};
 
 var scannerStream = null;
 var currentCameraFacing = 'environment';
@@ -154,61 +217,6 @@ var vinylDisc = document.getElementById('vinylDisc');
 var audioStatusText = document.getElementById('audioStatusText');
 var btnOpen = document.getElementById('btnOpenInvitation');
 var btnWaxSeal = document.getElementById('btnWaxSeal');
-
-// ==========================================================================
-// 0. JEMBATAN KOMUNIKASI JSON API (GITHUB PAGES <-> GOOGLE APPS SCRIPT)
-// ==========================================================================
-function isGasApiConfigured() {
-  return (
-    typeof GAS_WEB_APP_URL === 'string' &&
-    GAS_WEB_APP_URL.trim() !== '' &&
-    GAS_WEB_APP_URL.indexOf('PASTE_URL_WEB_APP_EXEC') === -1 &&
-    GAS_WEB_APP_URL.indexOf('https://') === 0
-  );
-}
-
-function callGasApiGet(actionName, extraParams) {
-  if (!isGasApiConfigured()) {
-    return Promise.reject(new Error('URL GAS_WEB_APP_URL belum diisi di file app.js'));
-  }
-  var url = GAS_WEB_APP_URL.trim() + '?action=' + encodeURIComponent(actionName);
-  if (extraParams) {
-    for (var k in extraParams) {
-      if (extraParams.hasOwnProperty(k)) {
-        url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(extraParams[k]);
-      }
-    }
-  }
-  return fetch(url, {
-    method: 'GET',
-    redirect: 'follow'
-  }).then(function(response) {
-    if (!response.ok) {
-      throw new Error('HTTP Error ' + response.status);
-    }
-    return response.json();
-  });
-}
-
-function callGasApiPost(actionName, payloadObj) {
-  if (!isGasApiConfigured()) {
-    return Promise.reject(new Error('URL GAS_WEB_APP_URL belum diisi di file app.js'));
-  }
-  var bodyData = Object.assign({ action: actionName }, payloadObj || {});
-  return fetch(GAS_WEB_APP_URL.trim(), {
-    method: 'POST',
-    redirect: 'follow',
-    headers: {
-      'Content-Type': 'text/plain;charset=utf-8'
-    },
-    body: JSON.stringify(bodyData)
-  }).then(function(response) {
-    if (!response.ok) {
-      throw new Error('HTTP Error ' + response.status);
-    }
-    return response.json();
-  });
-}
 
 // ==========================================================================
 // 1. ANIMASI PARTIKEL KELOPAK MAWAR & SILUET HATI MELAYANG
@@ -593,46 +601,27 @@ function submitRSVPForm() {
     btnSubmit.textContent = 'Mengirim Konfirmasi...';
   }
 
-  if (isGasApiConfigured()) {
-    callGasApiPost('submitRSVP', { data: payload })
-      .then(function(res) {
-        if (btnSubmit) {
-          btnSubmit.disabled = false;
-          btnSubmit.textContent = 'Kirim Konfirmasi & Doa';
-        }
-        if (res && res.status === 'success') {
-          showToast('Terima kasih! Konfirmasi kehadiran & doa restu Anda telah tercatat.');
-          if (pesanInp) pesanInp.value = '';
-          loadRSVPFeedAndAnalytics();
-        } else {
-          showToast((res && res.message) ? res.message : 'Gagal mengirim konfirmasi.');
-        }
-      })
-      .catch(function(err) {
-        if (btnSubmit) {
-          btnSubmit.disabled = false;
-          btnSubmit.textContent = 'Kirim Konfirmasi & Doa';
-        }
-        showToast('Terjadi kesalahan jaringan: ' + err.message);
-      });
-  } else {
-    setTimeout(function() {
+  callGasPost('submitRSVP', { payload: payload })
+    .then(function(res) {
       if (btnSubmit) {
         btnSubmit.disabled = false;
         btnSubmit.textContent = 'Kirim Konfirmasi & Doa';
       }
-      rawRSVPData.unshift({
-        timestamp: 'Baru saja',
-        nama: nama,
-        kontak: kontak || '-',
-        kehadiran: payload.kehadiran,
-        pax: payload.pax,
-        pesan: pesan
-      });
-      filterPublicRSVPFeed();
-      showToast('Terima kasih atas doa restu Anda! (Mode Lokal)');
-    }, 400);
-  }
+      if (res && res.status === 'success') {
+        showToast('Terima kasih! Konfirmasi kehadiran & doa restu Anda telah tercatat.');
+        if (pesanInp) pesanInp.value = '';
+        loadRSVPFeedAndAnalytics();
+      } else {
+        showToast((res && res.message) ? res.message : 'Gagal mengirim konfirmasi.');
+      }
+    })
+    .catch(function(err) {
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Kirim Konfirmasi & Doa';
+      }
+      showToast('Terjadi kesalahan koneksi: ' + err.message);
+    });
 }
 
 function setPublicRSVPFilter(status, btnEl) {
@@ -877,8 +866,52 @@ function confirmAppleCalendar() {
 }
 
 // ==========================================================================
-// 9. STUDIO TWIBBON 9:16 MULTI-TEMPLATE & KAMERA SELFIE LANGSUNG (NATIVE HTTPS)
+// 9. STUDIO TWIBBON 9:16 MULTI-TEMPLATE & KAMERA DEPAN/BELAKANG LIVE OVERLAY
 // ==========================================================================
+function preloadTwibbonOverlays() {
+  (customTwibbonTemplates || []).forEach(function(tpl) {
+    if (tpl && tpl.url && tpl.url.trim()) {
+      loadTwibbonOverlayImage(tpl.url.trim(), false);
+    }
+  });
+}
+
+function loadTwibbonOverlayImage(rawUrl, redrawWhenLoaded) {
+  var cleanOverlayUrl = convertDriveUrl(rawUrl);
+  if (!cleanOverlayUrl) return null;
+
+  if (twibbonCustomOverlayCache[cleanOverlayUrl]) {
+    return twibbonCustomOverlayCache[cleanOverlayUrl];
+  }
+
+  if (twibbonCustomOverlayLoading[cleanOverlayUrl]) {
+    return null;
+  }
+
+  twibbonCustomOverlayLoading[cleanOverlayUrl] = true;
+  var ovImg = new Image();
+  ovImg.crossOrigin = 'anonymous';
+  ovImg.onload = function() {
+    twibbonCustomOverlayCache[cleanOverlayUrl] = ovImg;
+    delete twibbonCustomOverlayLoading[cleanOverlayUrl];
+    if (redrawWhenLoaded) drawTwibbonCanvas();
+  };
+  ovImg.onerror = function() {
+    var fallbackImg = new Image();
+    fallbackImg.onload = function() {
+      twibbonCustomOverlayCache[cleanOverlayUrl] = fallbackImg;
+      delete twibbonCustomOverlayLoading[cleanOverlayUrl];
+      if (redrawWhenLoaded) drawTwibbonCanvas();
+    };
+    fallbackImg.onerror = function() {
+      delete twibbonCustomOverlayLoading[cleanOverlayUrl];
+    };
+    fallbackImg.src = cleanOverlayUrl;
+  };
+  ovImg.src = cleanOverlayUrl;
+  return null;
+}
+
 function renderAdminTwibbonList() {
   var listEl = document.getElementById('adminTwibbonList');
   if (!listEl) return;
@@ -921,15 +954,17 @@ function addCustomTwibbonTemplate() {
     builtIn: false
   };
 
-  customTwibbonTemplates.push(newTpl);
+  // Tempatkan desain terbaru di urutan pertama agar langsung terbuka saat tamu membuka Twibbon
+  customTwibbonTemplates.unshift(newTpl);
   selectedTwibbonId = newTpl.id;
 
   if (nameInp) nameInp.value = '';
   if (urlInp) urlInp.value = '';
 
+  preloadTwibbonOverlays();
   renderAdminTwibbonList();
   renderGuestTwibbonSelector();
-  showToast('Desain Twibbon ditambahkan! Jangan lupa klik Simpan.');
+  showToast('Desain Twibbon ditambahkan sebagai utama! Jangan lupa klik Simpan.');
 }
 
 function deleteCustomTwibbonTemplate(tplId) {
@@ -969,6 +1004,7 @@ function renderGuestTwibbonSelector() {
     var bgStyle = 'background:#4A0E17; color:#E5C378;';
     if (tpl.style === 'floral-gold') bgStyle = 'background:#7A1A27; color:#FFF;';
     else if (tpl.style === 'ivory-classic') bgStyle = 'background:#FAF5ED; color:#4A0E17;';
+    else if (tpl.style === 'custom-png' || (tpl.url && tpl.url.trim())) bgStyle = 'background:#2A060B; color:#E5C378;';
 
     var card = document.createElement('div');
     card.className = 'twibbon-tpl-card' + (tpl.id === selectedTwibbonId ? ' active' : '');
@@ -992,6 +1028,11 @@ function openTwibbonModal() {
   if (modal) modal.classList.add('show');
   initTwibbonDragEvents();
   drawTwibbonCanvas();
+
+  // Langsung aktifkan kamera dengan bingkai Twibbon menempel di atasnya
+  if (!twibbonUserImg) {
+    openTwibbonCamera(true);
+  }
 }
 
 function closeTwibbonModal() {
@@ -1001,36 +1042,96 @@ function closeTwibbonModal() {
 }
 
 function stopTwibbonCamera() {
+  isTwibbonCameraActive = false;
   if (twibbonLiveStream) {
     twibbonLiveStream.getTracks().forEach(function(track) { track.stop(); });
     twibbonLiveStream = null;
   }
   var video = document.getElementById('twibbonLiveVideo');
   var btnSnap = document.getElementById('btnTwibbonSnap');
-  if (video) video.style.display = 'none';
+  var btnSwitch = document.getElementById('btnTwibbonSwitchCam');
+  if (video) {
+    video.srcObject = null;
+    video.style.display = 'none';
+  }
   if (btnSnap) btnSnap.style.display = 'none';
+  if (btnSwitch) btnSwitch.style.display = 'none';
 }
 
-function openTwibbonCamera() {
+function updateTwibbonVideoTransform() {
+  var video = document.getElementById('twibbonLiveVideo');
+  if (!video) return;
+  var scaleFactor = (twibbonZoom || 100) / 100;
+  if (twibbonCameraFacing === 'user') {
+    video.style.transform = 'scaleX(-1) scale(' + scaleFactor + ')';
+  } else {
+    video.style.transform = 'scale(' + scaleFactor + ')';
+  }
+}
+
+function updateTwibbonCameraButtonsUI() {
+  var btnSwitch = document.getElementById('btnTwibbonSwitchCam');
+  var camInp = document.getElementById('twibbonCameraInput');
+  if (btnSwitch) {
+    btnSwitch.textContent = (twibbonCameraFacing === 'user')
+      ? '🔄 Kamera Belakang'
+      : '🔄 Kamera Depan';
+  }
+  if (camInp) {
+    camInp.setAttribute('capture', twibbonCameraFacing);
+  }
+}
+
+function openTwibbonCamera(isAutoStart) {
   var video = document.getElementById('twibbonLiveVideo');
   var btnSnap = document.getElementById('btnTwibbonSnap');
+  var btnSwitch = document.getElementById('btnTwibbonSwitchCam');
+
+  if (twibbonLiveStream) {
+    twibbonLiveStream.getTracks().forEach(function(track) { track.stop(); });
+    twibbonLiveStream = null;
+  }
+
+  updateTwibbonCameraButtonsUI();
 
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && video) {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: twibbonCameraFacing } },
+      audio: false
+    })
       .then(function(stream) {
         twibbonLiveStream = stream;
+        isTwibbonCameraActive = true;
         video.srcObject = stream;
+        updateTwibbonVideoTransform();
         video.style.display = 'block';
+        video.play().catch(function() {});
         if (btnSnap) btnSnap.style.display = 'inline-block';
+        if (btnSwitch) btnSwitch.style.display = 'inline-block';
+        drawTwibbonCanvas();
       })
       .catch(function() {
-        var camInp = document.getElementById('twibbonCameraInput');
-        if (camInp) camInp.click();
+        isTwibbonCameraActive = false;
+        drawTwibbonCanvas();
+        if (!isAutoStart) {
+          var camInp = document.getElementById('twibbonCameraInput');
+          if (camInp) camInp.click();
+        }
       });
   } else {
-    var camInp = document.getElementById('twibbonCameraInput');
-    if (camInp) camInp.click();
+    isTwibbonCameraActive = false;
+    drawTwibbonCanvas();
+    if (!isAutoStart) {
+      var camInp = document.getElementById('twibbonCameraInput');
+      if (camInp) camInp.click();
+    }
   }
+}
+
+function switchTwibbonCameraFacing() {
+  twibbonCameraFacing = (twibbonCameraFacing === 'user') ? 'environment' : 'user';
+  openTwibbonCamera(false);
+  showToast(twibbonCameraFacing === 'environment' ? 'Beralih ke Kamera Belakang' : 'Beralih ke Kamera Depan');
 }
 
 function captureTwibbonLiveFrame() {
@@ -1041,21 +1142,25 @@ function captureTwibbonLiveFrame() {
   tempCanvas.width = video.videoWidth;
   tempCanvas.height = video.videoHeight;
   var tCtx = tempCanvas.getContext('2d');
-  tCtx.translate(tempCanvas.width, 0);
-  tCtx.scale(-1, 1);
+
+  if (twibbonCameraFacing === 'user') {
+    tCtx.translate(tempCanvas.width, 0);
+    tCtx.scale(-1, 1);
+  }
   tCtx.drawImage(video, 0, 0);
 
+  var currentPreviewZoom = twibbonZoom || 100;
   var img = new Image();
   img.onload = function() {
     twibbonUserImg = img;
-    twibbonZoom = 100;
+    twibbonZoom = currentPreviewZoom;
     twibbonOffsetX = 0;
     twibbonOffsetY = 0;
     twibbonRotation = 0;
     var sl = document.getElementById('twibbonZoomSlider');
     var lb = document.getElementById('lblTwibbonZoom');
-    if (sl) sl.value = 100;
-    if (lb) lb.textContent = '100%';
+    if (sl) sl.value = currentPreviewZoom;
+    if (lb) lb.textContent = currentPreviewZoom + '%';
     stopTwibbonCamera();
     drawTwibbonCanvas();
   };
@@ -1091,7 +1196,11 @@ function onTwibbonZoomChanged(val) {
   twibbonZoom = parseInt(val, 10) || 100;
   var lb = document.getElementById('lblTwibbonZoom');
   if (lb) lb.textContent = twibbonZoom + '%';
-  drawTwibbonCanvas();
+  if (isTwibbonCameraActive) {
+    updateTwibbonVideoTransform();
+  } else {
+    drawTwibbonCanvas();
+  }
 }
 
 function rotateTwibbonPhoto() {
@@ -1105,7 +1214,7 @@ function initTwibbonDragEvents() {
   container._dragBound = true;
 
   container.addEventListener('mousedown', function(e) {
-    if (!twibbonUserImg) return;
+    if (!twibbonUserImg || isTwibbonCameraActive) return;
     isDraggingTwibbon = true;
     twibbonDragStartX = e.clientX;
     twibbonDragStartY = e.clientY;
@@ -1127,7 +1236,7 @@ function initTwibbonDragEvents() {
   });
 
   container.addEventListener('touchstart', function(e) {
-    if (!twibbonUserImg || !e.touches[0]) return;
+    if (!twibbonUserImg || isTwibbonCameraActive || !e.touches[0]) return;
     isDraggingTwibbon = true;
     twibbonDragStartX = e.touches[0].clientX;
     twibbonDragStartY = e.touches[0].clientY;
@@ -1158,49 +1267,57 @@ function drawTwibbonCanvas() {
 
   ctx.clearRect(0, 0, W, H);
 
-  var activeTpl = (customTwibbonTemplates || []).find(function(t) { return t.id === selectedTwibbonId; }) || {
-    style: 'royal-arch',
-    url: ''
-  };
+  var activeTpl = (customTwibbonTemplates || []).find(function(t) { return t.id === selectedTwibbonId; }) ||
+    (customTwibbonTemplates && customTwibbonTemplates.length > 0 ? customTwibbonTemplates[0] : { style: 'royal-arch', url: '' });
 
-  ctx.fillStyle = activeTpl.style === 'ivory-classic' ? '#FAF5ED' : '#2A060B';
-  ctx.fillRect(0, 0, W, H);
+  // Jika kamera sedang aktif, biarkan area tengah transparan agar kamera live terlihat langsung di dalam bingkai Twibbon
+  if (!isTwibbonCameraActive) {
+    ctx.fillStyle = activeTpl.style === 'ivory-classic' ? '#FAF5ED' : '#2A060B';
+    ctx.fillRect(0, 0, W, H);
 
-  if (twibbonUserImg) {
-    ctx.save();
-    ctx.translate(W / 2 + twibbonOffsetX, H / 2 + twibbonOffsetY);
-    ctx.rotate((twibbonRotation * Math.PI) / 180);
-    var baseScale = Math.max(W / twibbonUserImg.width, H / twibbonUserImg.height);
-    var finalScale = baseScale * (twibbonZoom / 100);
-    var drawW = twibbonUserImg.width * finalScale;
-    var drawH = twibbonUserImg.height * finalScale;
-    ctx.drawImage(twibbonUserImg, -drawW / 2, -drawH / 2, drawW, drawH);
-    ctx.restore();
-  } else {
-    ctx.fillStyle = activeTpl.style === 'ivory-classic' ? '#6B5558' : '#E5C378';
-    ctx.font = 'bold 34px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Ketuk Kamera Selfie atau Galeri', W / 2, H / 2 - 20);
-    ctx.font = '26px sans-serif';
-    ctx.fillText('untuk memasang foto Anda di bingkai ini', W / 2, H / 2 + 30);
+    if (twibbonUserImg) {
+      ctx.save();
+      ctx.translate(W / 2 + twibbonOffsetX, H / 2 + twibbonOffsetY);
+      ctx.rotate((twibbonRotation * Math.PI) / 180);
+      var baseScale = Math.max(W / twibbonUserImg.width, H / twibbonUserImg.height);
+      var finalScale = baseScale * (twibbonZoom / 100);
+      var drawW = twibbonUserImg.width * finalScale;
+      var drawH = twibbonUserImg.height * finalScale;
+      ctx.drawImage(twibbonUserImg, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = activeTpl.style === 'ivory-classic' ? '#6B5558' : '#E5C378';
+      ctx.font = 'bold 34px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Ketuk Kamera atau Galeri', W / 2, H / 2 - 20);
+      ctx.font = '26px sans-serif';
+      ctx.fillText('untuk memasang foto Anda di bingkai ini', W / 2, H / 2 + 30);
+    }
   }
 
+  // Jika template memakai URL PNG transparan kustom
   if (activeTpl.url && activeTpl.url.trim()) {
     var cleanOverlayUrl = convertDriveUrl(activeTpl.url.trim());
     if (twibbonCustomOverlayCache[cleanOverlayUrl]) {
       ctx.drawImage(twibbonCustomOverlayCache[cleanOverlayUrl], 0, 0, W, H);
       return;
     } else {
-      var ovImg = new Image();
-      ovImg.crossOrigin = 'anonymous';
-      ovImg.onload = function() {
-        twibbonCustomOverlayCache[cleanOverlayUrl] = ovImg;
-        drawTwibbonCanvas();
-      };
-      ovImg.src = cleanOverlayUrl;
+      loadTwibbonOverlayImage(activeTpl.url.trim(), true);
+      ctx.fillStyle = 'rgba(42, 6, 11, 0.72)';
+      ctx.fillRect(W / 2 - 240, H - 180, 480, 64);
+      ctx.fillStyle = '#E5C378';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Memuat bingkai Twibbon...', W / 2, H - 140);
+      return;
     }
   }
 
+  if (activeTpl.style === 'custom-png') {
+    return;
+  }
+
+  // Bingkai Ornamen Bawaan (Royal Arch / Floral Gold / Luxury Ivory)
   var isIvory = (activeTpl.style === 'ivory-classic');
   var borderGold = isIvory ? '#9A7730' : '#E5C378';
   var bandBg = isIvory ? 'rgba(250, 245, 237, 0.92)' : 'rgba(42, 6, 11, 0.88)';
@@ -1258,7 +1375,7 @@ function downloadTwibbonResult() {
 }
 
 // ==========================================================================
-// 10. PEMINDAI QR RESEPSIONIS (KAMERA LIVE HTTPS + BUNYI + LIVE LOG)
+// 10. PEMINDAI QR RESEPSIONIS (BUNYI WEB AUDIO API + LIVE LOG + SUB-TABS)
 // ==========================================================================
 function unlockScanAudioContext() {
   try {
@@ -1340,10 +1457,7 @@ function switchCameraFacing() {
 
 function startLiveQrScanner() {
   var video = document.getElementById('scannerVideo');
-  if (!video || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showToast('Browser tidak mendukung kamera langsung. Gunakan tombol Foto QR via Kamera HP.');
-    return;
-  }
+  if (!video || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
   navigator.mediaDevices.getUserMedia({
     video: { facingMode: currentCameraFacing },
@@ -1375,10 +1489,9 @@ function startLiveQrScanner() {
           onQRCodeScanned(code.data);
         }
       }
-    }, 300);
+    }, 320);
   }).catch(function(err) {
-    console.warn('Kamera live scanner gagal diakses:', err);
-    showToast('Izin kamera ditolak atau sedang dipakai aplikasi lain. Gunakan tombol Foto QR.');
+    console.warn('Kamera live scanner tidak dapat diakses:', err);
   });
 }
 
@@ -1434,30 +1547,28 @@ function onQRCodeScanned(rawText) {
   if (nameSpan) nameSpan.textContent = guestName;
   if (alertBox) alertBox.style.display = 'block';
 
-  if (isGasApiConfigured()) {
-    callGasApiPost('checkInGuest', {
-      identifier: guestName,
-      pin: currentAdminPin,
-      categoryHint: guestCategory
+  callGasPost('checkInGuest', {
+    identifier: guestName,
+    pin: currentAdminPin,
+    categoryHint: guestCategory
+  })
+    .then(function(res) {
+      if (res && res.status === 'success') {
+        playScanBeepSound('success');
+        appendScannerLiveLog(res.guestName || guestName, res.checkinTime || 'Baru saja', false);
+        showToast('✅ Check-In Berhasil: ' + (res.guestName || guestName));
+        loadGuestList();
+      } else if (res && res.status === 'already_checked_in') {
+        playScanBeepSound('duplicate');
+        appendScannerLiveLog(res.guestName || guestName, res.checkinTime || '-', true);
+        showToast('⚠️ Tamu sudah hadir sebelumnya (' + formatCleanTimeOnly(res.checkinTime || '-') + ' WIB)');
+      } else {
+        showToast((res && res.message) ? res.message : 'Gagal mencatat kehadiran.');
+      }
     })
-      .then(function(res) {
-        if (res && res.status === 'success') {
-          playScanBeepSound('success');
-          appendScannerLiveLog(res.guestName || guestName, res.checkinTime || 'Baru saja', false);
-          showToast('✅ Check-In Berhasil: ' + (res.guestName || guestName));
-          loadGuestList();
-        } else if (res && res.status === 'already_checked_in') {
-          playScanBeepSound('duplicate');
-          appendScannerLiveLog(res.guestName || guestName, res.checkinTime || '-', true);
-          showToast('⚠️ Tamu sudah hadir sebelumnya (' + formatCleanTimeOnly(res.checkinTime || '-') + ' WIB)');
-        } else {
-          showToast((res && res.message) ? res.message : 'Gagal mencatat kehadiran.');
-        }
-      })
-      .catch(function(err) {
-        showToast('Error scanner: ' + err.message);
-      });
-  }
+    .catch(function(err) {
+      showToast('Error scanner: ' + err.message);
+    });
 }
 
 function appendScannerLiveLog(guestName, timeStr, isDuplicate) {
@@ -2106,6 +2217,10 @@ function downloadAttendancePdf() {
   showToast('File PDF Daftar Hadir berhasil diunduh!');
 }
 
+function exportCateringCSV() {
+  exportRSVPExcel();
+}
+
 // ==========================================================================
 // 12. WEDDING STUDIO APPLICATION SUITE & OTENTIKASI SERVER-SIDE MURNI
 // ==========================================================================
@@ -2162,17 +2277,12 @@ function verifyAdminPIN() {
     loadAdminData();
   }
 
-  if (!isGasApiConfigured()) {
-    showToast('Harap isi GAS_WEB_APP_URL di file app.js terlebih dahulu.');
-    return;
-  }
-
   if (btnLogin) {
     btnLogin.disabled = true;
     btnLogin.textContent = '...';
   }
 
-  callGasApiPost('verifyPin', { pin: pinInput })
+  callGasPost('verifyAdminPinServer', { pin: pinInput })
     .then(function(res) {
       if (btnLogin) {
         btnLogin.disabled = false;
@@ -2370,43 +2480,32 @@ function resetWaTemplateDefault() {
   }
 }
 
-function loadInitialAppData() {
-  if (!isGasApiConfigured()) return;
-  callGasApiGet('init')
-    .then(function(res) {
-      if (res && res.status === 'success') {
-        if (res.config) {
-          populateConfigForms(res.config);
-        }
-        if (res.rsvp) {
-          rawRSVPData = res.rsvp;
-          updateCateringAnalytics(res.rsvp);
-          renderDetailedRSVPTable(res.rsvp);
-          filterPublicRSVPFeed();
-        }
-      }
-    })
-    .catch(function(err) {
-      console.warn('Gagal memuat data awal dari Google Sheets:', err);
-    });
-}
-
 function loadPublicConfig() {
   if (!isGasApiConfigured()) return;
-  callGasApiGet('getConfig')
+  callGasGet('getInvitationConfig', {})
     .then(function(res) {
       if (res && res.status === 'success' && res.data) {
         populateConfigForms(res.data);
       }
     })
     .catch(function(err) {
-      console.warn('Error getConfig:', err);
+      console.warn('Gagal memuat konfigurasi publik:', err);
     });
 }
 
 function loadAdminData() {
   if (!isGasApiConfigured()) return;
-  loadPublicConfig();
+
+  callGasGet('getInvitationConfig', {})
+    .then(function(res) {
+      if (res && res.status === 'success' && res.data) {
+        populateConfigForms(res.data);
+      }
+    })
+    .catch(function(err) {
+      console.warn('Gagal memuat konfigurasi admin:', err);
+    });
+
   loadGuestList();
   loadRSVPFeedAndAnalytics();
 }
@@ -2418,11 +2517,12 @@ function populateConfigForms(cfg) {
     }
   }
 
-  var elPubUrl = document.getElementById('cfgPublicAppUrl');
-  if (elPubUrl) {
-    elPubUrl.value = cfg.public_web_app_url || window.location.href.split('?')[0].split('#')[0];
+  if (cfg.public_web_app_url) {
+    var elPubUrl = document.getElementById('cfgPublicAppUrl');
+    if (elPubUrl) elPubUrl.value = cfg.public_web_app_url;
   }
 
+  // Muat daftar template Twibbon 9:16 dari database
   if (cfg.twibbon_templates_json !== undefined && cfg.twibbon_templates_json !== '') {
     try {
       var parsedTpls = JSON.parse(cfg.twibbon_templates_json);
@@ -2431,11 +2531,13 @@ function populateConfigForms(cfg) {
           t.builtIn = false;
           return t;
         });
+        selectedTwibbonId = customTwibbonTemplates.length > 0 ? customTwibbonTemplates[0].id : '';
       }
     } catch (e) {
       console.warn('Gagal parsing twibbon_templates_json:', e);
     }
   }
+  preloadTwibbonOverlays();
   renderAdminTwibbonList();
   renderGuestTwibbonSelector();
 
@@ -2444,6 +2546,7 @@ function populateConfigForms(cfg) {
     if (inTwSub) inTwSub.value = cfg.twibbon_subtext;
   }
 
+  // Teks Pembuka, Salam Pembuka, Judul Sesi, Pengantar Kado & Penutup Footer
   var activeEyebrow = cfg.cover_eyebrow || currentClientConfig.cover_eyebrow;
   if (document.getElementById('dynCoverEyebrow')) document.getElementById('dynCoverEyebrow').textContent = activeEyebrow;
   if (document.getElementById('dynHeroEyebrow')) document.getElementById('dynHeroEyebrow').textContent = activeEyebrow;
@@ -2473,6 +2576,7 @@ function populateConfigForms(cfg) {
   if (document.getElementById('dynPenutupFooter')) document.getElementById('dynPenutupFooter').textContent = activePenutupFooter;
   if (document.getElementById('cfgPenutupFooter')) document.getElementById('cfgPenutupFooter').value = activePenutupFooter;
 
+  // Judul Pasangan & Inisial Monogram
   var activeTitle = cfg.panggilan_title || currentClientConfig.panggilan_title;
   var activeInitials = cfg.inisial_mempelai || currentClientConfig.inisial_mempelai;
   var activeShortLoc = cfg.lokasi_ringkas || currentClientConfig.lokasi_ringkas;
@@ -2507,6 +2611,7 @@ function populateConfigForms(cfg) {
   if (elFootLoc) elFootLoc.textContent = activeShortLoc;
   if (inLocRingkas) inLocRingkas.value = activeShortLoc;
 
+  // Nama & Biodata Mempelai
   if (cfg.nama_lengkap_pria) {
     if (document.getElementById('dynNamaPria')) document.getElementById('dynNamaPria').textContent = cfg.nama_lengkap_pria;
     if (document.getElementById('cfgNamaPria')) document.getElementById('cfgNamaPria').value = cfg.nama_lengkap_pria;
@@ -2541,11 +2646,13 @@ function populateConfigForms(cfg) {
     if (document.getElementById('cfgIgWanita')) document.getElementById('cfgIgWanita').value = cfg.ig_wanita;
   }
 
+  // Update Nama Pasangan pada Ucapan Tersemat Aurum Project
   var elPinnedNames = document.getElementById('pinnedCoupleNames');
   if (elPinnedNames) {
     elPinnedNames.textContent = (currentClientConfig.nama_lengkap_pria || '') + ' & ' + (currentClientConfig.nama_lengkap_wanita || '');
   }
 
+  // Tanggal Sampul, Hero, Hitung Mundur & Kalender
   if (cfg.tanggal_cover) {
     if (document.getElementById('dynCoverDate')) document.getElementById('dynCoverDate').textContent = cfg.tanggal_cover;
     if (document.getElementById('cfgCoverDate')) document.getElementById('cfgCoverDate').value = cfg.tanggal_cover;
@@ -2611,6 +2718,7 @@ function populateConfigForms(cfg) {
     if (document.getElementById('cfgQuoteAuthor')) document.getElementById('cfgQuoteAuthor').value = cfg.quote_author;
   }
 
+  // Rekening & Sakelar QRIS
   if (cfg.rekening_1_bank) {
     if (document.getElementById('dynRek1Bank')) document.getElementById('dynRek1Bank').textContent = 'BANK ' + cfg.rekening_1_bank;
     if (document.getElementById('cfgRek1Bank')) document.getElementById('cfgRek1Bank').value = cfg.rekening_1_bank;
@@ -2651,11 +2759,13 @@ function populateConfigForms(cfg) {
     if (document.getElementById('cfgAlamatKado')) document.getElementById('cfgAlamatKado').value = cfg.alamat_kado_fisik;
   }
 
+  // Template WhatsApp
   var inWaTpl = document.getElementById('cfgWaTemplate');
   if (inWaTpl) {
     inWaTpl.value = cfg.wa_message_template || currentClientConfig.wa_message_template || DEFAULT_WA_TEMPLATE;
   }
 
+  // Kisah Cinta (Our Journey 3 Babak: Judul, Waktu & Isi)
   for (var b = 1; b <= 3; b++) {
     var bJudul = cfg['story_judul_' + b] || currentClientConfig['story_judul_' + b];
     var bWaktu = cfg['story_waktu_' + b] || currentClientConfig['story_waktu_' + b];
@@ -2676,6 +2786,7 @@ function populateConfigForms(cfg) {
     }
   }
 
+  // Sakelar Foto Our Journey
   var selStory = document.getElementById('cfgStoryPhotoEnabled');
   if (selStory) {
     selStory.value = (String(cfg.story_photo_enabled).toLowerCase() === 'false') ? 'false' : 'true';
@@ -2683,6 +2794,7 @@ function populateConfigForms(cfg) {
 
   applyFeatureTogglesToUI();
 
+  // Sinkronisasi Aset Visual
   if (cfg.asset_wax_seal_cover && document.getElementById('btnWaxSeal')) {
     document.getElementById('btnWaxSeal').src = convertDriveUrl(cfg.asset_wax_seal_cover);
   }
@@ -2923,21 +3035,22 @@ function saveConfigData() {
 
   showToast('Menyimpan seluruh perubahan ke Google Sheets...');
 
-  if (isGasApiConfigured()) {
-    callGasApiPost('saveConfig', { config: payload, pin: currentAdminPin })
-      .then(function(res) {
-        if (res && res.status === 'success') {
-          liveEditedFields = {};
-          showToast('Data konfigurasi & posisi foto berhasil disimpan permanen!');
-          loadAdminData();
-        } else {
-          showToast((res && res.message) ? res.message : 'Gagal menyimpan.');
-        }
-      })
-      .catch(function(err) {
-        showToast('Gagal menyimpan: ' + err.message);
-      });
-  }
+  callGasPost('saveInvitationConfig', {
+    payload: payload,
+    pin: currentAdminPin
+  })
+    .then(function(res) {
+      if (res && res.status === 'success') {
+        liveEditedFields = {};
+        showToast('Data konfigurasi & posisi foto berhasil disimpan permanen!');
+        loadAdminData();
+      } else {
+        showToast((res && res.message) ? res.message : 'Gagal menyimpan.');
+      }
+    })
+    .catch(function(err) {
+      showToast('Gagal menyimpan ke server: ' + err.message);
+    });
 }
 
 // ==========================================================================
@@ -2946,7 +3059,7 @@ function saveConfigData() {
 function loadRSVPFeedAndAnalytics() {
   if (!isGasApiConfigured()) return;
 
-  callGasApiGet('getRSVP')
+  callGasGet('getRSVPList', { limit: 150 })
     .then(function(res) {
       if (res && res.status === 'success' && res.data) {
         rawRSVPData = res.data;
@@ -2956,7 +3069,7 @@ function loadRSVPFeedAndAnalytics() {
       }
     })
     .catch(function(err) {
-      console.warn('Error loadRSVP:', err);
+      console.warn('Gagal memuat data RSVP:', err);
     });
 }
 
@@ -3378,6 +3491,7 @@ function getEffectiveAppUrl() {
   if (cfgInput && cfgInput.value.trim()) {
     return cfgInput.value.trim().replace(/\/$/, '');
   }
+  // Otomatis gunakan tautan halaman GitHub Pages aktif saat ini
   return window.location.href.split('?')[0].split('#')[0];
 }
 
@@ -3453,7 +3567,7 @@ function loadGuestList() {
   var container = document.getElementById('guestCardList');
   if (!container || !isGasApiConfigured()) return;
 
-  callGasApiPost('getGuestList', { pin: currentAdminPin })
+  callGasGet('getGuestList', { pin: currentAdminPin })
     .then(function(res) {
       if (res && res.status === 'success' && res.data) {
         guestQueueList = res.data;
@@ -3462,16 +3576,16 @@ function loadGuestList() {
       }
     })
     .catch(function(err) {
-      console.warn('Error loadGuestList:', err);
+      console.warn('Gagal memuat daftar tamu:', err);
     });
 }
 
 function manualCheckInGuest(guestName, category) {
   unlockScanAudioContext();
-  if (!guestName || !isGasApiConfigured()) return;
+  if (!guestName) return;
 
   showToast('Mencatat kehadiran ' + guestName + '...');
-  callGasApiPost('checkInGuest', {
+  callGasPost('checkInGuest', {
     identifier: guestName,
     pin: currentAdminPin,
     categoryHint: category || 'Tamu'
@@ -3628,9 +3742,12 @@ function confirmProceedDuplicateGuest() {
 }
 
 function executeSaveGuest(guestPayload) {
-  if (!guestPayload || !isGasApiConfigured()) return;
+  if (!guestPayload) return;
   showToast('Menambahkan tamu...');
-  callGasApiPost('saveGuest', { guest: guestPayload, pin: currentAdminPin })
+  callGasPost('saveGuest', {
+    payload: guestPayload,
+    pin: currentAdminPin
+  })
     .then(function(res) {
       if (res && res.status === 'success') {
         showToast('Tamu berhasil ditambahkan!');
@@ -3642,7 +3759,7 @@ function executeSaveGuest(guestPayload) {
       }
     })
     .catch(function(err) {
-      showToast('Error: ' + err.message);
+      showToast('Gagal menambah tamu: ' + err.message);
     });
 }
 
@@ -3726,7 +3843,7 @@ function openConfirmDeleteDemoModal() {
 
 function executePendingConfirmAction() {
   var action = pendingConfirmAction;
-  if (!action || !isGasApiConfigured()) return;
+  if (!action) return;
 
   var btnExec = document.getElementById('btnExecuteConfirmAction');
   if (btnExec) {
@@ -3742,7 +3859,7 @@ function executePendingConfirmAction() {
   }
 
   if (action.type === 'cancel_checkin') {
-    callGasApiPost('cancelCheckInGuest', { guestId: action.id, pin: currentAdminPin })
+    callGasPost('cancelCheckInGuest', { guestId: action.id, pin: currentAdminPin })
       .then(function(res) {
         finishAction();
         if (res && res.status === 'success') {
@@ -3757,7 +3874,7 @@ function executePendingConfirmAction() {
         showToast('Error: ' + err.message);
       });
   } else if (action.type === 'delete_guest') {
-    callGasApiPost('deleteSingleGuest', { guestId: action.id, pin: currentAdminPin })
+    callGasPost('deleteSingleGuest', { guestId: action.id, pin: currentAdminPin })
       .then(function(res) {
         finishAction();
         if (res && res.status === 'success') {
@@ -3772,7 +3889,7 @@ function executePendingConfirmAction() {
         showToast('Error: ' + err.message);
       });
   } else if (action.type === 'delete_rsvp') {
-    callGasApiPost('deleteSingleRSVP', { rsvpId: action.id, pin: currentAdminPin })
+    callGasPost('deleteSingleRSVP', { rsvpId: action.id, pin: currentAdminPin })
       .then(function(res) {
         finishAction();
         if (res && res.status === 'success') {
@@ -3787,7 +3904,7 @@ function executePendingConfirmAction() {
         showToast('Error: ' + err.message);
       });
   } else if (action.type === 'delete_demo') {
-    callGasApiPost('deleteDemoDataOnly', { pin: currentAdminPin })
+    callGasPost('deleteDemoDataOnly', { pin: currentAdminPin })
       .then(function(res) {
         finishAction();
         if (res && res.status === 'success') {
@@ -3848,17 +3965,15 @@ function executeResetClientData() {
     return;
   }
 
-  if (!isGasApiConfigured()) return;
-
   var btnExec = document.getElementById('btnExecuteResetData');
   if (btnExec) {
     btnExec.disabled = true;
     btnExec.textContent = 'Mengosongkan...';
   }
 
-  callGasApiPost('resetAllClientData', {
-    scope: pendingResetScope,
-    keyword: keyword,
+  callGasPost('resetAllClientData', {
+    targetScope: pendingResetScope,
+    confirmKeyword: keyword,
     pin: currentAdminPin
   })
     .then(function(res) {
@@ -3898,15 +4013,15 @@ function handleGuestSent(guestId, phone, guestName, category) {
 
   window.open(waUrl, '_blank');
 
-  if (isGasApiConfigured()) {
-    callGasApiPost('updateGuestStatus', {
-      guestId: guestId,
-      newStatus: 'Sudah Dikirim',
-      pin: currentAdminPin
-    }).then(function() {
+  callGasPost('updateGuestStatus', {
+    guestId: guestId,
+    newStatus: 'Sudah Dikirim',
+    pin: currentAdminPin
+  })
+    .then(function() {
       loadGuestList();
-    });
-  }
+    })
+    .catch(function() {});
 }
 
 function copyGuestLink(guestName, category) {
@@ -4068,15 +4183,16 @@ function processBulkGuests() {
     return;
   }
 
-  if (!isGasApiConfigured()) return;
-
   var btn = document.getElementById('btnProcessBulk');
   if (btn) {
     btn.disabled = true;
     btn.textContent = 'Menyimpan ' + listToImport.length + ' Tamu...';
   }
 
-  callGasApiPost('importGuestsBatch', { guests: listToImport, pin: currentAdminPin })
+  callGasPost('importGuestsBatch', {
+    payload: listToImport,
+    pin: currentAdminPin
+  })
     .then(function(res) {
       if (btn) {
         btn.disabled = false;
@@ -4194,9 +4310,10 @@ document.addEventListener('DOMContentLoaded', function() {
   initPetalAnimation();
   initGuestFromUrl();
   initCountdown();
+  loadRSVPFeedAndAnalytics();
   initScrollReveal();
   initCanvasDragInteractions();
-  loadInitialAppData();
+  loadPublicConfig();
 
   var secretTapTarget = document.getElementById('secretFooterTap');
   var tapCount = 0;
@@ -4222,29 +4339,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }, { passive: true });
   }
 
+  // Mendukung pembukaan otomatis bilah PIN Admin via parameter ?admin=1 pada URL GitHub Pages
   try {
-    var params = new URLSearchParams(window.location.search);
-    if (params.get('admin') === '1') {
+    var urlParams = new URLSearchParams(window.location.search);
+    var adminParam = urlParams.get('admin');
+    if (adminParam === '1' || adminParam === 'true') {
       setTimeout(function() {
         openStudioPasscodeBar();
       }, 400);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Admin URL param warning:', e);
+  }
 });
-```
-
----
-
-### Panduan Singkat Menghubungkan Google Apps Script ke GitHub Pages:
-
-1. **Perbarui Backend di Google Apps Script:**
-   * Buka Google Sheets Anda $\rightarrow$ **Ekstensi > Apps Script**.
-   * Salin kode baru **`code.gs`** (dari Tahap 1) ke file `code.gs`, lalu simpan (`Ctrl + S`).
-   * Klik **Terapkan (*Deploy*) > Kelola deployment > ikon Pensil (Edit) > Versi: Versi baru > Terapkan**.
-   * Salin **URL Web App** yang berakhiran `/exec`.
-2. **Tempelkan URL ke `app.js`:**
-   * Pada baris ke-7 file **`app.js`** di atas, ganti `'PASTE_URL_WEB_APP_EXEC_ANDA_DI_SINI'` dengan URL `/exec` Anda.
-3. **Upload 3 File ke GitHub:**
-   * Buat repositori publik baru di GitHub (misal: `cahyo-hani`), lalu unggah 3 file dari editor ini: **`index.html`**, **`style.css`**, dan **`app.js`**.
-   * Masuk ke menu **Settings > Pages** di repositori GitHub Anda $\rightarrow$ pilih **Branch: `main`** $\rightarrow$ klik **Save**.
-   * Dalam 1–2 menit, tautan undangan HTTPS GitHub Pages Anda langsung aktif dan kamera QR scanner maupun kamera selfie Twibbon berjalan lancar 100%!
